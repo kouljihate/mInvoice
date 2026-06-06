@@ -78,7 +78,13 @@ def invoice_view_view(page, navigate, invoice_id):
                 page.db.insert_payment(pmt)
                 page.db.recalc_invoice_status(invoice_id)
                 dlg.open = False; page.overlay.remove(dlg); page.update()
-                navigate(f"/view_invoice/{invoice_id}")
+                page.snack_bar = ft.SnackBar(ft.Text("Payment recorded", color=ft.Colors.WHITE), bgcolor=ft.Colors.GREEN, open=True)
+                page.update()
+                import asyncio
+                async def _go():
+                    await asyncio.sleep(0.8)
+                    navigate(f"/view_invoice/{invoice_id}")
+                page.run_task(_go())
             except ValueError:
                 pay_err.value = "Invalid amount"; page.update()
 
@@ -89,7 +95,7 @@ def invoice_view_view(page, navigate, invoice_id):
             title=ft.Text("Record Payment"),
             content=ft.Column([amount_f, method_f, ref_f, pay_err], tight=True, spacing=12),
             actions=[ft.TextButton("Cancel", on_click=close_dlg),
-                     ft.Button("Save", on_click=do_pay, style=ft.ButtonStyle(bgcolor=PRIMARY, color=ft.Colors.WHITE, shape=ft.RoundedRectangleBorder(radius=8)))],
+                     ft.Button("Save", on_click=do_pay, style=ft.ButtonStyle(bgcolor=PRIMARY, color=ft.Colors.WHITE, shape=ft.RoundedRectangleBorder(radius=10)))],
             actions_alignment=ft.MainAxisAlignment.END,
             open=True,
         )
@@ -232,21 +238,27 @@ def invoice_pdf_view(page, navigate, invoice_id):
             bgcolor=ft.Colors.WHITE, padding=20, border_radius=12,
             shadow=ft.BoxShadow(blur_radius=6, color="rgba(0,0,0,0.06)", offset=ft.Offset(0, 2)),
         ))
+    share_btn_style = ft.ButtonStyle(
+        bgcolor=PRIMARY, color=ft.Colors.WHITE,
+        shape=ft.RoundedRectangleBorder(radius=10), elevation=2,
+    )
     rows.append(ft.Container(height=16))
-    rows.append(primary_button("Open PDF", on_click=open_pdf))
-    rows.append(ft.Container(height=12))
     rows.append(ft.Row([
-        ft.Button("Save to Downloads", icon=ft.Icons.SAVE, on_click=save_pdf,
-            style=ft.ButtonStyle(bgcolor=PRIMARY, color=ft.Colors.WHITE, shape=ft.RoundedRectangleBorder(radius=10))),
-    ], alignment=ft.MainAxisAlignment.CENTER))
-    rows.append(ft.Container(height=12))
-    rows.append(ft.Row([
-        ft.Button("Gmail", icon=ft.Icons.EMAIL, on_click=share_gmail,
-            style=ft.ButtonStyle(bgcolor="#EA4335", color=ft.Colors.WHITE, shape=ft.RoundedRectangleBorder(radius=10))),
-        ft.Container(width=12),
-        ft.Button("WhatsApp", icon=ft.Icons.CHAT, on_click=share_whatsapp,
-            style=ft.ButtonStyle(bgcolor="#25D366", color=ft.Colors.WHITE, shape=ft.RoundedRectangleBorder(radius=10))),
-    ], alignment=ft.MainAxisAlignment.CENTER))
+        ft.Button("Open PDF", icon=ft.Icons.OPEN_IN_NEW, on_click=open_pdf, width=170, height=48,
+                  style=share_btn_style),
+        ft.PopupMenuButton(
+            content=ft.Container(
+                content=ft.Row([ft.Icon(ft.Icons.SHARE, size=18, color=ft.Colors.WHITE), ft.Text("Share", size=14, color=ft.Colors.WHITE)], spacing=8, alignment=ft.MainAxisAlignment.CENTER),
+                width=170, height=48, bgcolor=PRIMARY, border_radius=10,
+                shadow=ft.BoxShadow(blur_radius=4, color="rgba(0,0,0,0.15)", offset=ft.Offset(0, 2)),
+            ),
+            items=[
+                ft.PopupMenuItem(icon=ft.Icons.SAVE, content=ft.Text("Save to Downloads"), on_click=save_pdf),
+                ft.PopupMenuItem(icon=ft.Icons.EMAIL, content=ft.Text("Gmail"), on_click=share_gmail),
+                ft.PopupMenuItem(icon=ft.Icons.CHAT, content=ft.Text("WhatsApp"), on_click=share_whatsapp),
+            ],
+        ),
+    ], alignment=ft.MainAxisAlignment.CENTER, spacing=12))
 
     page.controls.clear()
     page.bgcolor = BACKGROUND

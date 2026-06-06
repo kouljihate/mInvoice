@@ -1,5 +1,6 @@
 import flet as ft
 from app.theme import PRIMARY, SECONDARY, TEXT_SECONDARY
+from app import __version__
 
 
 def login_view(page, navigate):
@@ -27,30 +28,37 @@ def login_view(page, navigate):
     page.add(
         ft.Container(
             content=ft.Column([
-                ft.Container(height=60),
-                ft.Container(
-                    content=ft.Icon(ft.Icons.RECEIPT_LONG, size=56, color=PRIMARY),
-                    bgcolor=PRIMARY, padding=20, border_radius=28,
-                ),
-                ft.Container(height=20),
-                ft.Text("mInvoice", size=28, weight=ft.FontWeight.BOLD, color=PRIMARY),
-                ft.Text("Manage your business", size=14, color=TEXT_SECONDARY),
-                ft.Container(height=40),
-                username,
-                ft.Container(height=12),
-                password,
-                ft.Container(height=6),
-                error_text,
-                ft.Container(height=16),
-                ft.Button(
-                    "Login", width=300, height=48, on_click=do_login,
-                    style=ft.ButtonStyle(
-                        bgcolor=PRIMARY, color=ft.Colors.WHITE,
-                        shape=ft.RoundedRectangleBorder(radius=10),
-                        elevation=2,
+                ft.Column([
+                    ft.Container(height=60),
+                    ft.Container(
+                        content=ft.Image(src="images/tech-logo.png", width=70, height=70, fit=ft.BoxFit.CONTAIN),
+                        padding=10,
                     ),
+                    ft.Container(height=20),
+                    ft.Text("mobile Invoicing", size=28, weight=ft.FontWeight.BOLD, color=PRIMARY),
+                    ft.Text("Manage your Business", size=8, color=TEXT_SECONDARY),
+                    ft.Container(height=40),
+                    username,
+                    ft.Container(height=12),
+                    password,
+                    ft.Container(height=6),
+                    error_text,
+                    ft.Container(height=16),
+                    ft.Button(
+                        "Login", width=300, height=48, on_click=do_login,
+                        style=ft.ButtonStyle(
+                            bgcolor=PRIMARY, color=ft.Colors.WHITE,
+                            shape=ft.RoundedRectangleBorder(radius=30),
+                            elevation=2,
+                        ),
+                    ),
+                ], expand=True, alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                ft.Container(
+                    content=ft.Text(f"v{__version__} - @koul", size=11, color=TEXT_SECONDARY),
+                    alignment=ft.alignment.Alignment.CENTER,
+                    padding=ft.Padding.only(bottom=10),
                 ),
-            ], alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            ], expand=True),
             expand=True,
         )
     )

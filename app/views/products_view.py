@@ -1,6 +1,6 @@
 import flet as ft, shutil, os, csv, json
 from app.ui_helper import make_appbar, card
-from app.theme import PRIMARY, BACKGROUND
+from app.theme import PRIMARY, BACKGROUND, WARNING
 
 
 def products_view(page, navigate):
@@ -13,15 +13,24 @@ def products_view(page, navigate):
             for p in products:
                 photo = ft.Container(width=44, height=44, bgcolor="#E5E7EB", border_radius=8)
                 if p.photo_path and os.path.exists(p.photo_path):
-                    photo = ft.Image(src=p.photo_path, width=44, height=44, fit=ft.ImageFit.COVER, border_radius=8)
+                    photo = ft.Image(src=p.photo_path, width=44, height=44, fit=ft.BoxFit.COVER, border_radius=8)
                 pkg = f" | {p.package_type}" if p.package_type else ""
+                low_stock = p.alert_stock > 0 and p.quantity <= p.alert_stock
                 rows.controls.append(card(
                     ft.Row([
                         photo,
                         ft.Column([
-                            ft.Text(p.name, weight=ft.FontWeight.BOLD, size=15, color="#1A1A2E"),
+                            ft.Row([
+                                ft.Text(p.name, weight=ft.FontWeight.BOLD, size=15, color="#1A1A2E", expand=True),
+                                ft.Container(
+                                    content=ft.Text("!" , size=12, color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD),
+                                    bgcolor=WARNING, width=22, height=22, border_radius=11,
+                                    alignment=ft.alignment.CENTER,
+                                ) if low_stock else ft.Container(),
+                            ], spacing=4),
                             ft.Text(f"Ref: {p.reference}{pkg}", size=11, color="#6B7280"),
-                            ft.Text(f"Stock: {p.quantity} {p.unit} | {p.unit_price:,.0f}/{p.unit}", size=12, color="#374151"),
+                            ft.Text(f"Stock: {p.quantity} {p.unit} | {p.unit_price:,.0f} MAD/{p.unit}", size=12,
+                                    color=WARNING if low_stock else "#374151"),
                         ], expand=True, spacing=2),
                         ft.IconButton(ft.Icons.EDIT, icon_color="#2563EB", icon_size=20, on_click=lambda e, pid=p.id: navigate(f"/edit_product/{pid}")),
                         ft.IconButton(ft.Icons.DELETE, icon_color="#DC2626", icon_size=20, on_click=lambda e, pid=p.id: delete(pid)),
@@ -55,8 +64,10 @@ def products_view(page, navigate):
                             reference=str(item.get("reference", "")),
                             unit_price=float(item.get("unit_price", item.get("price", 0))),
                             quantity=int(item.get("quantity", item.get("qty", 0))),
+                            alert_stock=int(item.get("alert_stock", 0)),
                             unit=str(item.get("unit", "piece")),
                             package_type=str(item.get("package_type", item.get("package", ""))),
+                            photo_path=str(item.get("photo_path", "")),
                         )
                         if prod.name:
                             page.db.insert_product(prod)
@@ -74,8 +85,10 @@ def products_view(page, navigate):
                                 reference=str(row.get("reference", "")),
                                 unit_price=float(row.get("unit_price", row.get("price", 0))),
                                 quantity=int(row.get("quantity", row.get("qty", 0))),
+                                alert_stock=int(row.get("alert_stock", 0)),
                                 unit=str(row.get("unit", "piece")),
                                 package_type=str(row.get("package_type", row.get("package", ""))),
+                                photo_path=str(row.get("photo_path", "")),
                             )
                             if prod.name:
                                 page.db.insert_product(prod)
@@ -116,8 +129,9 @@ def product_form_view(page, navigate, product_id=None):
     desc_f = ft.TextField(label="Description", width=400, multiline=True, min_lines=2, border_radius=8, focused_border_color=PRIMARY)
     ref_f = ft.TextField(label="Reference", width=400, border_radius=8, focused_border_color=PRIMARY)
     price_f = ft.TextField(label="Unit Price", width=400, keyboard_type=ft.KeyboardType.NUMBER, border_radius=8, focused_border_color=PRIMARY)
-    qty_f = ft.TextField(label="Quantity", width=190, keyboard_type=ft.KeyboardType.NUMBER, border_radius=8, focused_border_color=PRIMARY)
-    unit_f = ft.TextField(label="Unit", value="piece", width=190, border_radius=8, focused_border_color=PRIMARY)
+    qty_f = ft.TextField(label="Quantity", expand=True, keyboard_type=ft.KeyboardType.NUMBER, border_radius=8, focused_border_color=PRIMARY)
+    alert_f = ft.TextField(label="Alert Stock", expand=True, keyboard_type=ft.KeyboardType.NUMBER, hint_text="0 = disabled", border_radius=8, focused_border_color=PRIMARY)
+    unit_f = ft.TextField(label="Unit", value="piece", expand=True, border_radius=8, focused_border_color=PRIMARY)
     pkg_f = ft.TextField(label="Package Type", width=400, hint_text="e.g. Box, Bag, Carton", border_radius=8, focused_border_color=PRIMARY)
     photo_text = ft.Text("No photo", size=12, color="#6B7280")
     photo_val = ft.Text("")
@@ -129,7 +143,7 @@ def product_form_view(page, navigate, product_id=None):
         if files and files[0].path:
             photo_val.value = files[0].path
             photo_text.value = os.path.basename(files[0].path); photo_text.color = "#2E7D32"
-            photo_preview.content = ft.Image(src=files[0].path, width=80, height=80, fit=ft.ImageFit.COVER)
+            photo_preview.content = ft.Image(src=files[0].path, width=80, height=80, fit=ft.BoxFit.COVER)
             photo_preview.bgcolor = None; page.update()
 
     fp = ft.FilePicker()
@@ -140,11 +154,12 @@ def product_form_view(page, navigate, product_id=None):
         if p:
             name_f.value = p.name; desc_f.value = p.description; ref_f.value = p.reference
             price_f.value = str(p.unit_price) if p.unit_price else ""
-            qty_f.value = str(p.quantity); unit_f.value = p.unit; pkg_f.value = p.package_type
+            qty_f.value = str(p.quantity); alert_f.value = str(p.alert_stock) if p.alert_stock else ""
+            unit_f.value = p.unit; pkg_f.value = p.package_type
             saved_photo = p.photo_path
             if p.photo_path and os.path.exists(p.photo_path):
                 photo_text.value = os.path.basename(p.photo_path); photo_text.color = "#2E7D32"
-                photo_preview.content = ft.Image(src=p.photo_path, width=80, height=80, fit=ft.ImageFit.COVER)
+                photo_preview.content = ft.Image(src=p.photo_path, width=80, height=80, fit=ft.BoxFit.COVER)
                 photo_preview.bgcolor = None
 
     def save(e):
@@ -160,7 +175,9 @@ def product_form_view(page, navigate, product_id=None):
         from app.database import Product
         prod = Product(id=product_id or 0, name=name_f.value, description=desc_f.value,
                        reference=ref_f.value, unit_price=float(price_f.value or 0),
-                       quantity=int(qty_f.value or 0), unit=unit_f.value,
+                       quantity=int(qty_f.value or 0),
+                       alert_stock=int(alert_f.value or 0),
+                       unit=unit_f.value,
                        package_type=pkg_f.value, photo_path=dest)
         if product_id: page.db.update_product(prod)
         else: page.db.insert_product(prod)
@@ -175,17 +192,18 @@ def product_form_view(page, navigate, product_id=None):
             content=ft.Column([
                 ft.Container(
                     content=ft.Column([
+                        ft.Container(content=photo_preview, alignment=ft.alignment.Alignment(0, 0), padding=ft.Padding(top=0, bottom=10, left=0, right=0)),
                         ft.Text("Product Details", size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
-                        name_f, desc_f, ref_f, price_f, ft.Row([qty_f, unit_f], spacing=10), pkg_f,
+                        name_f, desc_f, ref_f, price_f, ft.Row([qty_f, alert_f, unit_f], spacing=8), pkg_f,
                         ft.Divider(height=16, color="transparent"),
-                        ft.Text("Photo", size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
                         ft.Row([
+                            ft.Text("Photo", size=15, weight=ft.FontWeight.BOLD, color=PRIMARY, expand=True),
                             ft.Button("Select Photo", icon=ft.Icons.IMAGE, on_click=lambda e: page.run_task(pick_photo)),
-                            ft.Container(width=12),
-                            ft.Button("Save", width=200, height=48, on_click=save,
-                                style=ft.ButtonStyle(bgcolor=PRIMARY, color=ft.Colors.WHITE,
-                                    shape=ft.RoundedRectangleBorder(radius=10), elevation=2)),
-                        ], alignment=ft.MainAxisAlignment.CENTER),
+                        ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                        ft.Container(height=16),
+                        ft.Button("Save", width=400, height=48, on_click=save,
+                            style=ft.ButtonStyle(bgcolor=PRIMARY, color=ft.Colors.WHITE,
+                                shape=ft.RoundedRectangleBorder(radius=10), elevation=2)),
                     ]),
                     bgcolor=ft.Colors.WHITE, padding=24, border_radius=16,
                     shadow=ft.BoxShadow(blur_radius=8, color="rgba(0,0,0,0.04)", offset=ft.Offset(0, 2)),

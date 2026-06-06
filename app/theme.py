@@ -20,8 +20,14 @@ def border_all(width=1, color=BORDER_COLOR):
     return ft.Border(left=side, top=side, right=side, bottom=side)
 
 
+FONT_FAMILY = "Comfortaa"
+
 def apply_theme(page: ft.Page):
+    page.fonts = {
+        FONT_FAMILY: "https://github.com/google/fonts/raw/main/ofl/comfortaa/Comfortaa%5Bwght%5D.ttf",
+    }
     page.theme = ft.Theme(
+        font_family=FONT_FAMILY,
         color_scheme=ft.ColorScheme(
             primary=PRIMARY,
             primary_container=PRIMARY_LIGHT,
@@ -33,7 +39,6 @@ def apply_theme(page: ft.Page):
     )
     page.bgcolor = BACKGROUND
     page.padding = 0
-    page.fonts = {}
     page.update()
 
 

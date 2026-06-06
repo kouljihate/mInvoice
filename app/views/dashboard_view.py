@@ -1,11 +1,11 @@
 import flet as ft
-from app.theme import PRIMARY, PRIMARY_LIGHT, SECONDARY, CARD_BG, TEXT_SECONDARY, border_all
+from app.theme import PRIMARY, PRIMARY_LIGHT, SECONDARY, CARD_BG, TEXT_SECONDARY, WARNING, border_all
 
 
 def dashboard_view(page, navigate):
     company = page.db.get_company()
     stats = page.db.get_dashboard_stats()
-    products, customers, quotes, invoices, pending, revenue = stats
+    products, customers, quotes, invoices, pending, revenue, delivery_notes, payments_count, low_stock = stats
 
     def logout(e):
         page.session.store.set("user_id", None); navigate("/login")
@@ -14,13 +14,15 @@ def dashboard_view(page, navigate):
         return ft.Container(
             content=ft.Column([
                 ft.Container(
-                    content=ft.Icon(icon, size=28, color=ft.Colors.WHITE),
-                    bgcolor=color, padding=10, border_radius=12,
+                    content=ft.Icon(icon, size=44, color=ft.Colors.WHITE),
+                    bgcolor=color, padding=14, border_radius=14,
                 ),
                 ft.Container(height=8),
-                ft.Text(str(value), size=22, weight=ft.FontWeight.BOLD, color="#1A1A2E"),
-                ft.Text(title, size=12, color=TEXT_SECONDARY),
-            ]),
+                ft.Row([
+                    ft.Text(str(value), size=22, weight=ft.FontWeight.BOLD, color="#1A1A2E"),
+                    ft.Text(title, size=11, color=TEXT_SECONDARY),
+                ], alignment=ft.MainAxisAlignment.CENTER, spacing=6),
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             padding=16, bgcolor=CARD_BG, border_radius=14, ink=True,
             on_click=lambda e: navigate(route), expand=True,
             shadow=ft.BoxShadow(blur_radius=8, color="rgba(0,0,0,0.05)", offset=ft.Offset(0, 2)),
@@ -33,7 +35,7 @@ def dashboard_view(page, navigate):
         ft.Container(
             content=ft.Column([
                 ft.Row([
-                    ft.Text("mInvoice", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                    ft.Text("mobile Invoicing", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
                     ft.IconButton(ft.Icons.LOGOUT, icon_color=ft.Colors.WHITE_70, on_click=logout),
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Text(company.name if company else "My Company", size=15, color=ft.Colors.WHITE_70),
@@ -60,8 +62,9 @@ def dashboard_view(page, navigate):
                         dash_card("Customers", customers, ft.Icons.PEOPLE, "#059669", "/customers")], spacing=12),
                 ft.Row([dash_card("Quotes", quotes, ft.Icons.DESCRIPTION, "#D97706", "/quotes"),
                         dash_card("Invoices", invoices, ft.Icons.RECEIPT, "#7C3AED", "/invoices")], spacing=12),
-                ft.Row([dash_card("BL", "Docs", ft.Icons.LOCAL_SHIPPING, "#0891B2", "/delivery_notes"),
-                        dash_card("Payments", "Track", ft.Icons.PAYMENTS, "#DC2626", "/payments")], spacing=12),
+                ft.Row([dash_card("BL", delivery_notes, ft.Icons.LOCAL_SHIPPING, "#0891B2", "/delivery_notes"),
+                        dash_card("Payments", payments_count, ft.Icons.PAYMENTS, "#DC2626", "/payments")], spacing=12),
+                ft.Row([dash_card("Low Stock", low_stock, ft.Icons.WARNING_AMBER, WARNING, "/products")], spacing=12),
             ], spacing=8),
             padding=16, expand=True,
         ),

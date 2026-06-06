@@ -6,3 +6,4 @@ minvoice.db
 pdfs/
 .gradle/
 .DS_Store
+build/

@@ -14,7 +14,7 @@ from app.views.payments_view import payments_view
 
 
 def main(page: ft.Page):
-    page.title = "mInvoice"
+    page.title = "mobile Invoicing App"
     page.theme_mode = ft.ThemeMode.LIGHT
     apply_theme(page)
     page.db = Database()
@@ -83,4 +83,4 @@ def main(page: ft.Page):
 
 
 if __name__ == "__main__":
-    ft.run(main)
+    ft.run(main, assets_dir="app/static")

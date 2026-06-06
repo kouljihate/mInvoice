@@ -1,6 +1,6 @@
-import flet as ft
-from app.ui_helper import make_appbar, card
-from app.theme import PRIMARY, BACKGROUND
+import flet as ft, os, shutil, csv, json
+from app.ui_helper import make_appbar, card, status_badge
+from app.theme import PRIMARY, BACKGROUND, TEXT_SECONDARY
 
 
 def customers_view(page, navigate):
@@ -11,16 +11,27 @@ def customers_view(page, navigate):
             rows.controls.append(ft.Text("No customers yet. Tap + to add.", color="#6B7280"))
         else:
             for c in customers:
+                avatar = ft.Container(
+                    content=ft.Text(c.name[0].upper(), size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                    bgcolor=PRIMARY, padding=14, border_radius=12, width=56, height=56, alignment=ft.Alignment(0, 0),
+                )
+                if c.photo_path and os.path.exists(c.photo_path):
+                    avatar = ft.Image(src=c.photo_path, width=56, height=56, fit=ft.BoxFit.COVER, border_radius=12)
                 rows.controls.append(card(
                     ft.Row([
-                        ft.Container(
-                            content=ft.Text(c.name[0].upper(), size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
-                            bgcolor=PRIMARY, padding=12, border_radius=10, width=44, height=44, alignment=ft.Alignment(0, 0),
-                        ),
+                        avatar,
                         ft.Column([
-                            ft.Text(c.name, weight=ft.FontWeight.BOLD, size=15, color="#1A1A2E"),
-                            ft.Text(c.phone if c.phone else c.email, size=12, color="#6B7280"),
-                        ], expand=True, spacing=2),
+                            ft.Row([
+                                ft.Text(c.name, weight=ft.FontWeight.BOLD, size=15, color="#1A1A2E", expand=True),
+                                status_badge("Company" if c.customer_type == "company" else "Private"),
+                            ], spacing=4),
+                            ft.Text(c.address, size=11, color=TEXT_SECONDARY),
+                            ft.Row([
+                                ft.Text(c.phone, size=11, color="#374151"),
+                                ft.Text("|", size=11, color=TEXT_SECONDARY),
+                                ft.Text(c.email, size=11, color="#374151"),
+                            ], spacing=4),
+                        ], expand=True, spacing=1),
                         ft.IconButton(ft.Icons.EDIT, icon_color="#2563EB", icon_size=20,
                                       on_click=lambda e, cid=c.id: navigate(f"/edit_customer/{cid}")),
                         ft.IconButton(ft.Icons.DELETE, icon_color="#DC2626", icon_size=20,
@@ -32,12 +43,90 @@ def customers_view(page, navigate):
     def delete(cid):
         page.db.delete_customer(cid); load()
 
+    async def pick_bulk():
+        files = await bulk_fp.pick_files(allow_multiple=False, file_type=ft.FilePickerFileType.CUSTOM, allowed_extensions=["json", "csv"])
+        if not files or not files[0].path:
+            return
+        fpath = files[0].path
+        ext = os.path.splitext(fpath)[1].lower()
+        from app.database import Customer
+        imported = 0
+        errors = []
+
+        def check_record(record, source=""):
+            if not isinstance(record, dict):
+                errors.append(f"{source}: expected an object, got {type(record).__name__}")
+                return None
+            if not record.get("name"):
+                errors.append(f"{source}: missing required 'name' field")
+                return None
+            return Customer(
+                name=str(record["name"]),
+                customer_type=str(record.get("customer_type", "private")),
+                address=str(record.get("address", "")),
+                phone=str(record.get("phone", "")),
+                email=str(record.get("email", "")),
+                tax_id=str(record.get("tax_id", "")),
+                rc=str(record.get("rc", "")),
+                if_tax=str(record.get("if_tax", "")),
+                cnss=str(record.get("cnss", "")),
+                photo_path=str(record.get("photo_path", "")),
+            )
+
+        try:
+            if ext == ".json":
+                with open(fpath, encoding="utf-8") as f:
+                    data = json.load(f)
+                if isinstance(data, dict):
+                    data = [data]
+                if not isinstance(data, list):
+                    page.snack_bar = ft.SnackBar(ft.Text("Invalid JSON format: expected an array of customers")); page.snack_bar.open = True; page.update(); return
+                for i, item in enumerate(data):
+                    cust = check_record(item, f"Row {i+1}")
+                    if cust:
+                        try:
+                            page.db.insert_customer(cust)
+                            imported += 1
+                        except Exception as ex:
+                            errors.append(f"Row {i+1} ({cust.name}): {ex}")
+            elif ext == ".csv":
+                with open(fpath, encoding="utf-8-sig") as f:
+                    reader = csv.DictReader(f)
+                    if not reader.fieldnames or "name" not in reader.fieldnames:
+                        page.snack_bar = ft.SnackBar(ft.Text("Invalid CSV format: missing 'name' column. Expected columns: name, customer_type, address, phone, email, tax_id, rc, if_tax, cnss, photo_path")); page.snack_bar.open = True; page.update(); return
+                    for i, row in enumerate(reader, 1):
+                        cust = check_record(row, f"Row {i}")
+                        if cust:
+                            try:
+                                page.db.insert_customer(cust)
+                                imported += 1
+                            except Exception as ex:
+                                errors.append(f"Row {i} ({cust.name}): {ex}")
+        except json.JSONDecodeError as ex:
+            page.snack_bar = ft.SnackBar(ft.Text(f"Invalid JSON file: {ex}")); page.snack_bar.open = True; page.update(); return
+        except Exception as ex:
+            page.snack_bar = ft.SnackBar(ft.Text(f"File error: {ex}")); page.snack_bar.open = True; page.update(); return
+
+        msg = f"Imported {imported} customer(s)"
+        if errors:
+            short = errors[:3]
+            msg += ". First errors: " + "; ".join(short)
+        page.snack_bar = ft.SnackBar(ft.Text(msg))
+        page.snack_bar.open = True
+        page.update()
+        load()
+
+    bulk_fp = ft.FilePicker()
     rows = ft.Column(spacing=8, scroll=ft.ScrollMode.AUTO)
     page.controls.clear()
     page.bgcolor = BACKGROUND
     page.add(ft.Column([
         make_appbar(page, navigate, "Customers", back_route="/dashboard",
-                    actions=[ft.IconButton(ft.Icons.ADD, icon_color=ft.Colors.WHITE, on_click=lambda e: navigate("/add_customer"))]),
+                    actions=[
+                        ft.TextButton("Bulk", icon=ft.Icons.UPLOAD_FILE, style=ft.ButtonStyle(color=ft.Colors.WHITE),
+                                     on_click=lambda e: page.run_task(pick_bulk)),
+                        ft.IconButton(ft.Icons.ADD, icon_color=ft.Colors.WHITE, on_click=lambda e: navigate("/add_customer")),
+                    ]),
         ft.Container(content=rows, expand=True, padding=16),
     ], expand=True, spacing=0))
     page.update()
@@ -45,24 +134,60 @@ def customers_view(page, navigate):
 
 
 def customer_form_view(page, navigate, customer_id=None):
+    type_f = ft.Dropdown(label="Customer Type", width=400, options=[
+        ft.dropdown.Option("private", "Private"),
+        ft.dropdown.Option("company", "Company"),
+    ], value="private", border_radius=8, focused_border_color=PRIMARY)
     name_f = ft.TextField(label="Customer Name *", width=400, border_radius=8, focused_border_color=PRIMARY)
     addr_f = ft.TextField(label="Address", width=400, multiline=True, min_lines=2, border_radius=8, focused_border_color=PRIMARY)
     phone_f = ft.TextField(label="Phone", width=400, border_radius=8, focused_border_color=PRIMARY)
     email_f = ft.TextField(label="Email", width=400, border_radius=8, focused_border_color=PRIMARY)
-    tax_f = ft.TextField(label="Tax ID", width=400, border_radius=8, focused_border_color=PRIMARY)
+    tax_f = ft.TextField(label="ICE (Tax ID)", width=400, border_radius=8, focused_border_color=PRIMARY)
+    rc_f = ft.TextField(label="RC", width=400, border_radius=8, focused_border_color=PRIMARY)
+    if_tax_f = ft.TextField(label="IF (Tax)", width=400, border_radius=8, focused_border_color=PRIMARY)
+    cnss_f = ft.TextField(label="CNSS", width=400, border_radius=8, focused_border_color=PRIMARY)
+    photo_text = ft.Text("No photo", size=12, color="#6B7280")
+    photo_val = ft.Text("")
+    photo_preview = ft.Container(width=80, height=80, bgcolor="#E5E7EB", border_radius=10)
+
+    async def pick_photo():
+        files = await fp.pick_files(allow_multiple=False, file_type=ft.FilePickerFileType.IMAGE)
+        if files and files[0].path:
+            photo_val.value = files[0].path
+            photo_text.value = os.path.basename(files[0].path); photo_text.color = "#2E7D32"
+            photo_preview.content = ft.Image(src=files[0].path, width=80, height=80, fit=ft.BoxFit.COVER)
+            photo_preview.bgcolor = None; page.update()
+
+    fp = ft.FilePicker()
     error_txt = ft.Text("", color=ft.Colors.RED, size=13)
 
     if customer_id:
         c = page.db.get_customer(customer_id)
         if c:
+            type_f.value = c.customer_type
             name_f.value = c.name; addr_f.value = c.address; phone_f.value = c.phone
             email_f.value = c.email; tax_f.value = c.tax_id
+            rc_f.value = c.rc; if_tax_f.value = c.if_tax; cnss_f.value = c.cnss
+            if c.photo_path and os.path.exists(c.photo_path):
+                photo_text.value = os.path.basename(c.photo_path); photo_text.color = "#2E7D32"
+                photo_preview.content = ft.Image(src=c.photo_path, width=80, height=80, fit=ft.BoxFit.COVER)
+                photo_preview.bgcolor = None
 
     def save(e):
         if not name_f.value: error_txt.value = "Customer name is required"; page.update(); return
         from app.database import Customer
-        cust = Customer(id=customer_id or 0, name=name_f.value, address=addr_f.value,
-                        phone=phone_f.value, email=email_f.value, tax_id=tax_f.value)
+        dest = photo_val.value
+        if photo_val.value:
+            d = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "assets")
+            os.makedirs(d, exist_ok=True)
+            dest = os.path.join(d, f"cust_{customer_id or 'new'}{os.path.splitext(photo_val.value)[1]}")
+            try: shutil.copy2(photo_val.value, dest)
+            except Exception as ex: error_txt.value = f"Photo error: {ex}"; page.update(); return
+        cust = Customer(id=customer_id or 0, name=name_f.value,
+                        customer_type=type_f.value, address=addr_f.value,
+                        phone=phone_f.value, email=email_f.value, tax_id=tax_f.value,
+                        rc=rc_f.value, if_tax=if_tax_f.value, cnss=cnss_f.value,
+                        photo_path=dest)
         if customer_id: page.db.update_customer(cust)
         else: page.db.insert_customer(cust)
         navigate("/customers")
@@ -76,8 +201,15 @@ def customer_form_view(page, navigate, customer_id=None):
             content=ft.Column([
                 ft.Container(
                     content=ft.Column([
+                        ft.Container(content=photo_preview, alignment=ft.alignment.Alignment(0, 0), padding=ft.Padding(top=0, bottom=10, left=0, right=0)),
                         ft.Text("Customer Details", size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
-                        name_f, addr_f, phone_f, email_f, tax_f, error_txt,
+                        type_f, name_f, addr_f, phone_f, email_f, tax_f, rc_f, if_tax_f, cnss_f,
+                        ft.Divider(height=16, color="transparent"),
+                        ft.Row([
+                            ft.Text("Photo / Logo", size=15, weight=ft.FontWeight.BOLD, color=PRIMARY, expand=True),
+                            ft.Button("Select", icon=ft.Icons.IMAGE, on_click=lambda e: page.run_task(pick_photo)),
+                        ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                        error_txt,
                         ft.Container(height=12),
                         ft.Button("Save", width=400, height=48, on_click=save,
                             style=ft.ButtonStyle(bgcolor=PRIMARY, color=ft.Colors.WHITE,

@@ -41,6 +41,7 @@ class Product:
     reference: str = ""
     unit_price: float = 0.0
     quantity: int = 0
+    alert_stock: int = 0
     unit: str = "piece"
     package_type: str = ""
     photo_path: str = ""
@@ -50,10 +51,15 @@ class Product:
 class Customer:
     id: int = 0
     name: str = ""
+    customer_type: str = "private"
     address: str = ""
     phone: str = ""
     email: str = ""
     tax_id: str = ""
+    rc: str = ""
+    if_tax: str = ""
+    cnss: str = ""
+    photo_path: str = ""
 
 
 @dataclass
@@ -286,6 +292,7 @@ class Database:
         self.conn.commit()
         self._migrate_company()
         self._migrate_products()
+        self._migrate_customers()
 
     def _migrate_company(self):
         c = self.conn.cursor()
@@ -316,9 +323,19 @@ class Database:
 
     def _migrate_products(self):
         c = self.conn.cursor()
-        for col in ["package_type", "photo_path"]:
+        for col in ["package_type", "photo_path", "alert_stock"]:
             try:
-                c.execute(f"ALTER TABLE products ADD COLUMN {col} TEXT DEFAULT ''")
+                dtype = "INTEGER DEFAULT 0" if col == "alert_stock" else "TEXT DEFAULT ''"
+                c.execute(f"ALTER TABLE products ADD COLUMN {col} {dtype}")
+            except sqlite3.OperationalError:
+                pass
+        self.conn.commit()
+
+    def _migrate_customers(self):
+        c = self.conn.cursor()
+        for col in ["customer_type", "rc", "if_tax", "cnss", "photo_path"]:
+            try:
+                c.execute(f"ALTER TABLE customers ADD COLUMN {col} TEXT DEFAULT ''")
             except sqlite3.OperationalError:
                 pass
         self.conn.commit()
@@ -328,15 +345,23 @@ class Database:
             return None
         return Product(id=row["id"], name=row["name"], description=row["description"],
                        reference=row["reference"], unit_price=row["unit_price"],
-                       quantity=row["quantity"], unit=row["unit"],
+                       quantity=row["quantity"],
+                       alert_stock=row["alert_stock"] if "alert_stock" in row.keys() else 0,
+                       unit=row["unit"],
                        package_type=row["package_type"] if "package_type" in row.keys() else "",
                        photo_path=row["photo_path"] if "photo_path" in row.keys() else "")
 
     def _row_to_customer(self, row):
         if not row:
             return None
-        return Customer(id=row["id"], name=row["name"], address=row["address"],
-                        phone=row["phone"], email=row["email"], tax_id=row["tax_id"])
+        return Customer(id=row["id"], name=row["name"],
+                        customer_type=row["customer_type"] if "customer_type" in row.keys() else "private",
+                        address=row["address"], phone=row["phone"], email=row["email"],
+                        tax_id=row["tax_id"],
+                        rc=row["rc"] if "rc" in row.keys() else "",
+                        if_tax=row["if_tax"] if "if_tax" in row.keys() else "",
+                        cnss=row["cnss"] if "cnss" in row.keys() else "",
+                        photo_path=row["photo_path"] if "photo_path" in row.keys() else "")
 
     def _row_to_quote(self, row):
         if not row:
@@ -445,17 +470,17 @@ class Database:
 
     def insert_product(self, p: Product):
         c = self.conn.cursor()
-        c.execute("""INSERT INTO products (name, description, reference, unit_price, quantity, unit, package_type, photo_path)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                  (p.name, p.description, p.reference, p.unit_price, p.quantity, p.unit, p.package_type, p.photo_path))
+        c.execute("""INSERT INTO products (name, description, reference, unit_price, quantity, alert_stock, unit, package_type, photo_path)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                  (p.name, p.description, p.reference, p.unit_price, p.quantity, p.alert_stock, p.unit, p.package_type, p.photo_path))
         self.conn.commit()
         return c.lastrowid
 
     def update_product(self, p: Product):
         c = self.conn.cursor()
         c.execute("""UPDATE products SET name=?, description=?, reference=?,
-                     unit_price=?, quantity=?, unit=?, package_type=?, photo_path=? WHERE id=?""",
-                  (p.name, p.description, p.reference, p.unit_price, p.quantity, p.unit, p.package_type, p.photo_path, p.id))
+                     unit_price=?, quantity=?, alert_stock=?, unit=?, package_type=?, photo_path=? WHERE id=?""",
+                  (p.name, p.description, p.reference, p.unit_price, p.quantity, p.alert_stock, p.unit, p.package_type, p.photo_path, p.id))
         self.conn.commit()
 
     def delete_product(self, id):
@@ -489,17 +514,19 @@ class Database:
 
     def insert_customer(self, cust: Customer):
         c = self.conn.cursor()
-        c.execute("""INSERT INTO customers (name, address, phone, email, tax_id)
-                     VALUES (?, ?, ?, ?, ?)""",
-                  (cust.name, cust.address, cust.phone, cust.email, cust.tax_id))
+        c.execute("""INSERT INTO customers (name, customer_type, address, phone, email, tax_id, rc, if_tax, cnss, photo_path)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                  (cust.name, cust.customer_type, cust.address, cust.phone, cust.email,
+                   cust.tax_id, cust.rc, cust.if_tax, cust.cnss, cust.photo_path))
         self.conn.commit()
         return c.lastrowid
 
     def update_customer(self, cust: Customer):
         c = self.conn.cursor()
-        c.execute("""UPDATE customers SET name=?, address=?, phone=?, email=?, tax_id=?
-                     WHERE id=?""",
-                  (cust.name, cust.address, cust.phone, cust.email, cust.tax_id, cust.id))
+        c.execute("""UPDATE customers SET name=?, customer_type=?, address=?, phone=?, email=?,
+                     tax_id=?, rc=?, if_tax=?, cnss=?, photo_path=? WHERE id=?""",
+                  (cust.name, cust.customer_type, cust.address, cust.phone, cust.email,
+                   cust.tax_id, cust.rc, cust.if_tax, cust.cnss, cust.photo_path, cust.id))
         self.conn.commit()
 
     def delete_customer(self, id):
@@ -791,6 +818,10 @@ class Database:
         c.execute("DELETE FROM payments WHERE id = ?", (id,))
         self.conn.commit()
 
+    def get_low_stock_count(self):
+        c = self.conn.cursor()
+        return c.execute("SELECT COUNT(*) FROM products WHERE alert_stock > 0 AND quantity <= alert_stock").fetchone()[0]
+
     # --- MISC ---
     def get_dashboard_stats(self):
         c = self.conn.cursor()
@@ -800,7 +831,10 @@ class Database:
         invoices = c.execute("SELECT COUNT(*) FROM invoices").fetchone()[0]
         pending = c.execute("SELECT COUNT(*) FROM invoices WHERE status IN ('unpaid','partial')").fetchone()[0]
         revenue = c.execute("SELECT COALESCE(SUM(amount),0) FROM payments").fetchone()[0]
-        return products, customers, quotes, invoices, pending, revenue
+        delivery_notes = c.execute("SELECT COUNT(*) FROM delivery_notes").fetchone()[0]
+        payments = c.execute("SELECT COUNT(*) FROM payments").fetchone()[0]
+        low_stock = self.get_low_stock_count()
+        return products, customers, quotes, invoices, pending, revenue, delivery_notes, payments, low_stock
 
     def close(self):
         self.conn.close()

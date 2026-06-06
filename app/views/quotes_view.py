@@ -238,6 +238,23 @@ def quote_view_view(page, navigate, quote_id):
         if dn or inv:
             page.snack_bar = ft.SnackBar(ft.Text("Already validated")); page.snack_bar.open = True; page.update(); return
 
+        # Check stock availability for all items first
+        stock_errors = []
+        for item in items:
+            if item.product_id:
+                prod = page.db.get_product(item.product_id)
+                if prod and item.quantity > prod.quantity:
+                    stock_errors.append(f"{item.product_name}: only {prod.quantity} in stock, need {item.quantity}")
+        if stock_errors:
+            page.snack_bar = ft.SnackBar(
+                ft.Column([ft.Text("Insufficient stock:", weight=ft.FontWeight.BOLD)] +
+                          [ft.Text(e, size=12) for e in stock_errors], spacing=4),
+                bgcolor=ft.Colors.RED
+            )
+            page.snack_bar.open = True
+            page.update()
+            return
+
         last_dn = page.db.get_last_dn_id()
         last_inv = page.db.get_last_invoice_id()
         dn_num = f"BL-{last_dn + 1:05d}"
@@ -276,7 +293,7 @@ def quote_view_view(page, navigate, quote_id):
         page.db.update_quote_status(quote_id, "validated")
         page.snack_bar = ft.SnackBar(ft.Text(f"Validated → {dn_num} & {inv_num}"))
         page.snack_bar.open = True
-        navigate(f"/view_quote/{quote_id}")
+        navigate("/quotes")
 
     page.controls.clear()
     page.bgcolor = BACKGROUND
