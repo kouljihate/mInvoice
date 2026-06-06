@@ -25,7 +25,7 @@ def products_view(page, navigate):
                                 ft.Container(
                                     content=ft.Text("!" , size=12, color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD),
                                     bgcolor=WARNING, width=22, height=22, border_radius=11,
-                                    alignment=ft.alignment.CENTER,
+                                    alignment=ft.alignment.Alignment(0, 0),
                                 ) if low_stock else ft.Container(),
                             ], spacing=4),
                             ft.Text(f"Ref: {p.reference}{pkg}", size=11, color="#6B7280"),

@@ -1,4 +1,4 @@
-import flet as ft
+import flet as ft, os
 from app.ui_helper import make_appbar, card, status_badge, primary_button
 from app.theme import PRIMARY, BACKGROUND
 
@@ -15,7 +15,7 @@ def quotes_view(page, navigate):
                 rows.controls.append(card(
                     ft.Row([
                         ft.Column([
-                            ft.Text(f"#{q.id}", weight=ft.FontWeight.BOLD, size=15, color="#1A1A2E"),
+                            ft.Text(q.quote_number or f"#{q.id}", weight=ft.FontWeight.BOLD, size=15, color="#1A1A2E"),
                             ft.Text(cname, size=12, color="#6B7280"),
                         ], expand=True, spacing=2),
                         ft.Column([
@@ -24,9 +24,33 @@ def quotes_view(page, navigate):
                         ], horizontal_alignment=ft.CrossAxisAlignment.END, spacing=4),
                         ft.IconButton(ft.Icons.REMOVE_RED_EYE, icon_color="#2563EB", icon_size=20,
                                       on_click=lambda e, qid=q.id: navigate(f"/view_quote/{qid}")),
+                        ft.IconButton(ft.Icons.DELETE, icon_color="#DC2626", icon_size=20,
+                                      on_click=lambda e, qid=q.id: delete_quote_confirm(qid)),
+                        ft.IconButton(ft.Icons.SHARE, icon_color="#0891B2", icon_size=20,
+                                      on_click=lambda e, q=q: share_quote(q)),
                     ], vertical_alignment=ft.CrossAxisAlignment.CENTER)
                 ))
         page.update()
+
+    def share_quote(q):
+        if q.pdf_path and os.path.exists(q.pdf_path):
+            os.startfile(q.pdf_path)
+        else:
+            page.snack_bar = ft.SnackBar(ft.Text("No PDF yet. Validate the quote first."))
+            page.snack_bar.open = True
+            page.update()
+
+    def delete_quote_confirm(qid):
+        def do_delete(e):
+            page.db.delete_quote(qid)
+            page.overlay.remove(dlg); page.update(); load()
+        dlg = ft.AlertDialog(
+            title=ft.Text("Delete Quote?"),
+            content=ft.Text("This will permanently delete this quote.", size=14),
+            actions=[ft.TextButton("Cancel", on_click=lambda e: (page.overlay.remove(dlg), page.update())),
+                     ft.FilledButton("Delete", on_click=do_delete, style=ft.ButtonStyle(bgcolor=ft.Colors.RED, color=ft.Colors.WHITE))],
+        )
+        page.overlay.append(dlg); dlg.open = True; page.update()
 
     rows = ft.Column(spacing=8, scroll=ft.ScrollMode.AUTO)
     page.controls.clear()
@@ -255,27 +279,22 @@ def quote_view_view(page, navigate, quote_id):
             page.update()
             return
 
-        last_dn = page.db.get_last_dn_id()
-        last_inv = page.db.get_last_invoice_id()
-        dn_num = f"BL-{last_dn + 1:05d}"
-        inv_num = f"INV-{last_inv + 1:05d}"
-
         from app.database import DeliveryNote, Invoice, InvoiceItem
 
         dn_obj = DeliveryNote(
-            delivery_number=dn_num, quote_id=quote_id,
-            customer_id=q.customer_id, date=today,
+            quote_id=quote_id, customer_id=q.customer_id, date=today,
             total_ht=total_ht, total_ttc=total_ht
         )
         dn_id = page.db.insert_delivery_note(dn_obj)
+        dn = page.db.get_delivery_note(dn_id)
 
         inv_obj = Invoice(
-            invoice_number=inv_num, quote_id=quote_id,
-            delivery_note_id=dn_id, customer_id=q.customer_id,
-            date=today, due_date=today, status="unpaid",
+            quote_id=quote_id, delivery_note_id=dn_id, customer_id=q.customer_id,
+            date=today, due_date=today, status="draft",
             total_ht=total_ht, total_tva=0.0, total_ttc=total_ht
         )
         inv_id = page.db.insert_invoice(inv_obj)
+        inv = page.db.get_invoice(inv_id)
 
         inv_items = []
         for item in items:
@@ -290,15 +309,23 @@ def quote_view_view(page, navigate, quote_id):
         if inv_items:
             page.db.insert_invoice_items(inv_items)
 
+        from app.database import Payment
+        payment = Payment(
+            invoice_id=inv_id, amount=total_ht, date=today,
+            method="cash", reference="", notes="Draft payment from quote validation",
+            status="draft"
+        )
+        page.db.insert_payment(payment)
+
         page.db.update_quote_status(quote_id, "validated")
-        page.snack_bar = ft.SnackBar(ft.Text(f"Validated → {dn_num} & {inv_num}"))
+        page.snack_bar = ft.SnackBar(ft.Text(f"Validated → {dn.delivery_number} & {inv.invoice_number}"))
         page.snack_bar.open = True
         navigate("/quotes")
 
     page.controls.clear()
     page.bgcolor = BACKGROUND
     page.add(ft.Column([
-        make_appbar(page, navigate, f"Quote #{q.id}", back_route="/quotes"),
+        make_appbar(page, navigate, f"Quote {q.quote_number}", back_route="/quotes"),
         ft.Container(
             content=ft.Column([
                 ft.Container(

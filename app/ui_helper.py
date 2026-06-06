@@ -36,9 +36,10 @@ def card(content, on_click=None, padding=14):
 
 
 def status_badge(text):
-    STATUS_COLORS = {"draft": "#9E9E9E", "validated": SUCCESS, "paid": SUCCESS,
-                     "unpaid": ERROR, "partial": WARNING, "confirmed": "#2563EB",
-                     "sent": "#0891B2", "cancelled": ERROR}
+    STATUS_COLORS = {"draft": "#9E9E9E", "validated": SUCCESS, "completed": SUCCESS,
+                     "sent": "#0891B2", "partial": WARNING, "confirmed": "#2563EB",
+                     "cancelled": ERROR, "waiting": "#F59E0B", "incomplete": "#EF4444",
+                     "done": SUCCESS}
     color = STATUS_COLORS.get(text.lower(), "#9E9E9E") if text else "#9E9E9E"
     return ft.Container(
         content=ft.Text(text.upper(), size=10, color=ft.Colors.WHITE, weight=ft.FontWeight.BOLD),

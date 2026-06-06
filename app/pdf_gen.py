@@ -155,7 +155,8 @@ def generate_invoice_pdf(company, invoice, items, payments=None, total_paid=0):
     tpl.notes_label = "Notes:"
     balance = invoice.total_ttc - total_paid
     status_text = {
-        "paid": "PAYEE", "unpaid": "NON PAYEE",
+        "completed": "PAYEE", "draft": "BROUILLON",
+        "sent": "ENVOYEE",
         "partial": f"PAIEMENT PARTIEL - Restant: {balance:.2f}"
     }.get(invoice.status, invoice.status)
     tpl.header = (

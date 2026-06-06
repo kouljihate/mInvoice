@@ -4,6 +4,14 @@ from app.theme import PRIMARY, BACKGROUND
 
 
 def invoices_view(page, navigate):
+    def share_inv(inv):
+        if inv.pdf_path and os.path.exists(inv.pdf_path):
+            os.startfile(inv.pdf_path)
+        else:
+            page.snack_bar = ft.SnackBar(ft.Text("No PDF generated yet."))
+            page.snack_bar.open = True
+            page.update()
+
     def load():
         docs = page.db.get_all_invoices()
         rows.controls.clear()
@@ -15,7 +23,7 @@ def invoices_view(page, navigate):
                 rows.controls.append(card(
                     ft.Row([
                         ft.Column([
-                            ft.Text(f"INV #{inv.id}", weight=ft.FontWeight.BOLD, size=15, color="#1A1A2E"),
+                            ft.Text(inv.invoice_number or f"INV #{inv.id}", weight=ft.FontWeight.BOLD, size=15, color="#1A1A2E"),
                             ft.Text(cname, size=12, color="#6B7280"),
                         ], expand=True, spacing=2),
                         ft.Column([
@@ -24,6 +32,8 @@ def invoices_view(page, navigate):
                         ], horizontal_alignment=ft.CrossAxisAlignment.END, spacing=4),
                         ft.IconButton(ft.Icons.REMOVE_RED_EYE, icon_color="#2563EB", icon_size=20,
                                       on_click=lambda e, iid=inv.id: navigate(f"/view_invoice/{iid}")),
+                        ft.IconButton(ft.Icons.SHARE, icon_color="#0891B2", icon_size=20,
+                                      on_click=lambda e, inv=inv: share_inv(inv)),
                     ], vertical_alignment=ft.CrossAxisAlignment.CENTER)
                 ))
         page.update()
@@ -73,8 +83,12 @@ def invoice_view_view(page, navigate, invoice_id):
             from datetime import date
             from app.database import Payment
             try:
-                pmt = Payment(invoice_id=invoice_id, amount=float(amount_f.value),
-                              date=date.today().isoformat(), method=method_f.value or "Cash", reference=ref_f.value)
+                new_amount = float(amount_f.value)
+                total_paid = paid_total + new_amount
+                new_status = "done" if total_paid >= inv.total_ht else "incomplete"
+                pmt = Payment(invoice_id=invoice_id, amount=new_amount,
+                              date=date.today().isoformat(), method=method_f.value or "Cash",
+                              reference=ref_f.value, status=new_status)
                 page.db.insert_payment(pmt)
                 page.db.recalc_invoice_status(invoice_id)
                 dlg.open = False; page.overlay.remove(dlg); page.update()
@@ -106,6 +120,13 @@ def invoice_view_view(page, navigate, invoice_id):
         from app.views.template_editor import edit_template_view
         edit_template_view(page, navigate, "invoice", back_route=f"/view_invoice/{invoice_id}")
 
+    def mark_sent(e):
+        page.db.update_invoice_status(invoice_id, "sent")
+        for pmt in payments:
+            page.db.conn.execute("UPDATE payments SET status='waiting' WHERE id=?", (pmt.id,))
+        page.db.conn.commit()
+        navigate(f"/view_invoice/{invoice_id}")
+
     inv_items_list = page.db.get_invoice_items(invoice_id)
     items_col = ft.Column(spacing=6)
     for item in inv_items_list:
@@ -130,7 +151,7 @@ def invoice_view_view(page, navigate, invoice_id):
     page.controls.clear()
     page.bgcolor = BACKGROUND
     page.add(ft.Column([
-        make_appbar(page, navigate, f"Invoice #{inv.id}", back_route="/invoices"),
+        make_appbar(page, navigate, f"{inv.invoice_number}", back_route="/invoices"),
         ft.Container(
             content=ft.Column([
                 ft.Container(
@@ -155,21 +176,11 @@ def invoice_view_view(page, navigate, invoice_id):
                     bgcolor=ft.Colors.WHITE, padding=20, border_radius=14,
                     shadow=ft.BoxShadow(blur_radius=6, color="rgba(0,0,0,0.04)", offset=ft.Offset(0, 2)),
                 ),
-                ft.Container(height=12),
-                ft.Container(
-                    content=ft.Column([
-                        ft.Row([ft.Text("Payments", size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
-                                ft.Text(f"Paid: {paid_total:,.2f} | Due: {remaining:,.2f}", size=12, color="#6B7280")], spacing=8),
-                        ft.Divider(height=4),
-                        pay_col,
-                        ft.Container(height=8),
-                        ft.TextButton("+ Record Payment", icon=ft.Icons.ADD, on_click=add_payment, style=ft.ButtonStyle(color=PRIMARY)),
-                    ]),
-                    bgcolor=ft.Colors.WHITE, padding=20, border_radius=14,
-                    shadow=ft.BoxShadow(blur_radius=6, color="rgba(0,0,0,0.04)", offset=ft.Offset(0, 2)),
-                ),
                 ft.Container(height=20),
                 primary_button("Generate PDF", on_click=gen_pdf),
+                ft.Container(height=8),
+                primary_button("Mark as Sent", on_click=mark_sent,
+                               disabled=inv.status != "draft"),
                 ft.Container(height=8),
                 ft.TextButton("Edit Template", icon=ft.Icons.EDIT, on_click=edit_template, style=ft.ButtonStyle(color=PRIMARY)),
             ], scroll=ft.ScrollMode.AUTO, horizontal_alignment=ft.CrossAxisAlignment.CENTER),

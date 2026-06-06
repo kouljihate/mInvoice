@@ -1,9 +1,17 @@
-import flet as ft
+import flet as ft, os
 from app.ui_helper import make_appbar, card, status_badge, primary_button
 from app.theme import PRIMARY, BACKGROUND
 
 
 def delivery_notes_view(page, navigate):
+    def share_dn(d):
+        if d.pdf_path and os.path.exists(d.pdf_path):
+            os.startfile(d.pdf_path)
+        else:
+            page.snack_bar = ft.SnackBar(ft.Text("No PDF generated yet."))
+            page.snack_bar.open = True
+            page.update()
+
     def load():
         docs = page.db.get_all_delivery_notes()
         rows.controls.clear()
@@ -15,15 +23,16 @@ def delivery_notes_view(page, navigate):
                 rows.controls.append(card(
                     ft.Row([
                         ft.Column([
-                            ft.Text(f"BL #{d.id}", weight=ft.FontWeight.BOLD, size=15, color="#1A1A2E"),
+                            ft.Text(d.delivery_number or f"BL #{d.id}", weight=ft.FontWeight.BOLD, size=15, color="#1A1A2E"),
                             ft.Text(cname, size=12, color="#6B7280"),
-                            ft.Text(d.delivery_number, size=11, color="#6B7280"),
                         ], expand=True, spacing=2),
                         ft.Column([
                             ft.Text(f"{d.total_ht:,.2f}", size=14, weight=ft.FontWeight.BOLD, color="#1A1A2E"),
                         ], horizontal_alignment=ft.CrossAxisAlignment.END, spacing=4),
                         ft.IconButton(ft.Icons.REMOVE_RED_EYE, icon_color="#2563EB", icon_size=20,
                                       on_click=lambda e, did=d.id: navigate(f"/view_delivery_note/{did}")),
+                        ft.IconButton(ft.Icons.SHARE, icon_color="#0891B2", icon_size=20,
+                                      on_click=lambda e, d=d: share_dn(d)),
                     ], vertical_alignment=ft.CrossAxisAlignment.CENTER)
                 ))
         page.update()
@@ -68,7 +77,7 @@ def delivery_note_view_view(page, navigate, doc_id):
     page.controls.clear()
     page.bgcolor = BACKGROUND
     page.add(ft.Column([
-        make_appbar(page, navigate, f"BL #{d.id}", back_route="/delivery_notes"),
+        make_appbar(page, navigate, f"{d.delivery_number}", back_route="/delivery_notes"),
         ft.Container(
             content=ft.Column([
                 ft.Container(

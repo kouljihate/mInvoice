@@ -76,6 +76,8 @@ class Quote:
     total_ht: float = 0.0
     total_ttc: float = 0.0
     pdf_path: str = ""
+    created_at: str = ""
+    updated_at: str = ""
 
 
 @dataclass
@@ -109,6 +111,8 @@ class DeliveryNote:
     total_ht: float = 0.0
     total_ttc: float = 0.0
     pdf_path: str = ""
+    created_at: str = ""
+    updated_at: str = ""
 
 
 @dataclass
@@ -121,12 +125,14 @@ class Invoice:
     customer_name: str = ""
     date: str = ""
     due_date: str = ""
-    status: str = "unpaid"
+    status: str = "draft"
     notes: str = ""
     total_ht: float = 0.0
     total_tva: float = 0.0
     total_ttc: float = 0.0
     pdf_path: str = ""
+    created_at: str = ""
+    updated_at: str = ""
 
 
 @dataclass
@@ -158,12 +164,16 @@ class Template:
 @dataclass
 class Payment:
     id: int = 0
+    payment_number: str = ""
     invoice_id: int = 0
     amount: float = 0.0
     date: str = ""
     method: str = "cash"
     reference: str = ""
     notes: str = ""
+    status: str = "draft"
+    created_at: str = ""
+    updated_at: str = ""
 
 
 class Database:
@@ -219,7 +229,7 @@ class Database:
             );
             CREATE TABLE IF NOT EXISTS quotes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                quote_number TEXT NOT NULL,
+                quote_number TEXT NOT NULL DEFAULT '',
                 customer_id INTEGER NOT NULL,
                 date TEXT DEFAULT '',
                 valid_until TEXT DEFAULT '',
@@ -228,7 +238,9 @@ class Database:
                 template TEXT DEFAULT 'default',
                 total_ht REAL DEFAULT 0.0,
                 total_ttc REAL DEFAULT 0.0,
-                pdf_path TEXT DEFAULT ''
+                pdf_path TEXT DEFAULT '',
+                created_at TEXT DEFAULT '',
+                updated_at TEXT DEFAULT ''
             );
             CREATE TABLE IF NOT EXISTS quote_items (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -241,29 +253,33 @@ class Database:
             );
             CREATE TABLE IF NOT EXISTS delivery_notes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                delivery_number TEXT NOT NULL,
+                delivery_number TEXT NOT NULL DEFAULT '',
                 quote_id INTEGER NOT NULL,
                 customer_id INTEGER NOT NULL,
                 date TEXT DEFAULT '',
                 notes TEXT DEFAULT '',
                 total_ht REAL DEFAULT 0.0,
                 total_ttc REAL DEFAULT 0.0,
-                pdf_path TEXT DEFAULT ''
+                pdf_path TEXT DEFAULT '',
+                created_at TEXT DEFAULT '',
+                updated_at TEXT DEFAULT ''
             );
             CREATE TABLE IF NOT EXISTS invoices (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                invoice_number TEXT NOT NULL,
+                invoice_number TEXT NOT NULL DEFAULT '',
                 quote_id INTEGER NOT NULL,
                 delivery_note_id INTEGER DEFAULT 0,
                 customer_id INTEGER NOT NULL,
                 date TEXT DEFAULT '',
                 due_date TEXT DEFAULT '',
-                status TEXT DEFAULT 'unpaid',
+                status TEXT DEFAULT 'draft',
                 notes TEXT DEFAULT '',
                 total_ht REAL DEFAULT 0.0,
                 total_tva REAL DEFAULT 0.0,
                 total_ttc REAL DEFAULT 0.0,
-                pdf_path TEXT DEFAULT ''
+                pdf_path TEXT DEFAULT '',
+                created_at TEXT DEFAULT '',
+                updated_at TEXT DEFAULT ''
             );
             CREATE TABLE IF NOT EXISTS invoice_items (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -281,18 +297,24 @@ class Database:
             );
             CREATE TABLE IF NOT EXISTS payments (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                payment_number TEXT NOT NULL DEFAULT '',
                 invoice_id INTEGER NOT NULL,
                 amount REAL DEFAULT 0.0,
                 date TEXT DEFAULT '',
                 method TEXT DEFAULT 'cash',
                 reference TEXT DEFAULT '',
-                notes TEXT DEFAULT ''
+                notes TEXT DEFAULT '',
+                status TEXT DEFAULT 'draft',
+                created_at TEXT DEFAULT '',
+                updated_at TEXT DEFAULT ''
             );
         """)
         self.conn.commit()
         self._migrate_company()
         self._migrate_products()
         self._migrate_customers()
+        self._migrate_payments()
+        self._migrate_timestamps()
 
     def _migrate_company(self):
         c = self.conn.cursor()
@@ -340,6 +362,37 @@ class Database:
                 pass
         self.conn.commit()
 
+    def _migrate_payments(self):
+        c = self.conn.cursor()
+        for col in ["status"]:
+            try:
+                c.execute(f"ALTER TABLE payments ADD COLUMN {col} TEXT DEFAULT 'draft'")
+            except sqlite3.OperationalError:
+                pass
+        self.conn.commit()
+
+    def _migrate_timestamps(self):
+        c = self.conn.cursor()
+        now = datetime.now().isoformat()
+        for table, cols in {"quotes": ["created_at", "updated_at"],
+                            "delivery_notes": ["created_at", "updated_at"],
+                            "invoices": ["created_at", "updated_at"],
+                            "payments": ["payment_number", "created_at", "updated_at"]}.items():
+            for col in cols:
+                try:
+                    c.execute(f"ALTER TABLE {table} ADD COLUMN {col} TEXT DEFAULT ''")
+                except sqlite3.OperationalError:
+                    pass
+        self.conn.commit()
+
+    def _next_doc_number(self, prefix):
+        tables = {"Q": "quotes", "I": "invoices", "DN": "delivery_notes", "P": "payments"}
+        c = self.conn.cursor()
+        c.execute(f"SELECT COALESCE(MAX(id), 0) + 1 FROM {tables[prefix]}")
+        seq = c.fetchone()[0]
+        today = datetime.now().strftime("%d%m%y")
+        return f"{prefix}{today}-{seq:04d}"
+
     def _row_to_product(self, row):
         if not row:
             return None
@@ -371,7 +424,9 @@ class Database:
                      valid_until=row["valid_until"], status=row["status"],
                      notes=row["notes"], template=row["template"],
                      total_ht=row["total_ht"], total_ttc=row["total_ttc"],
-                     pdf_path=row["pdf_path"])
+                     pdf_path=row["pdf_path"],
+                     created_at=row["created_at"] if "created_at" in row.keys() else "",
+                     updated_at=row["updated_at"] if "updated_at" in row.keys() else "")
 
     def _row_to_quote_item(self, row):
         if not row:
@@ -388,7 +443,9 @@ class Database:
                             quote_id=row["quote_id"], customer_id=row["customer_id"],
                             date=row["date"], notes=row["notes"],
                             total_ht=row["total_ht"], total_ttc=row["total_ttc"],
-                            pdf_path=row["pdf_path"])
+                            pdf_path=row["pdf_path"],
+                            created_at=row["created_at"] if "created_at" in row.keys() else "",
+                            updated_at=row["updated_at"] if "updated_at" in row.keys() else "")
 
     def _row_to_invoice(self, row):
         if not row:
@@ -399,15 +456,22 @@ class Database:
                        due_date=row["due_date"], status=row["status"],
                        notes=row["notes"], total_ht=row["total_ht"],
                        total_tva=row["total_tva"], total_ttc=row["total_ttc"],
-                       pdf_path=row["pdf_path"])
+                       pdf_path=row["pdf_path"],
+                       created_at=row["created_at"] if "created_at" in row.keys() else "",
+                       updated_at=row["updated_at"] if "updated_at" in row.keys() else "")
 
     def _row_to_payment(self, row):
         if not row:
             return None
-        return Payment(id=row["id"], invoice_id=row["invoice_id"],
+        return Payment(id=row["id"],
+                       payment_number=row["payment_number"] if "payment_number" in row.keys() else "",
+                       invoice_id=row["invoice_id"],
                        amount=row["amount"], date=row["date"],
                        method=row["method"], reference=row["reference"],
-                       notes=row["notes"])
+                       notes=row["notes"],
+                       status=row["status"] if "status" in row.keys() else "draft",
+                       created_at=row["created_at"] if "created_at" in row.keys() else "",
+                       updated_at=row["updated_at"] if "updated_at" in row.keys() else "")
 
     # --- COMPANY ---
     def get_company(self):
@@ -557,29 +621,34 @@ class Database:
 
     def insert_quote(self, q: Quote):
         c = self.conn.cursor()
-        c.execute("""INSERT INTO quotes (quote_number, customer_id, date, valid_until, status, notes, template, total_ht, total_ttc)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                  (q.quote_number, q.customer_id, q.date, q.valid_until,
-                   q.status, q.notes, q.template, q.total_ht, q.total_ttc))
+        now = datetime.now().isoformat()
+        qnum = q.quote_number or self._next_doc_number("Q")
+        c.execute("""INSERT INTO quotes (quote_number, customer_id, date, valid_until, status, notes, template, total_ht, total_ttc, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                  (qnum, q.customer_id, q.date, q.valid_until,
+                   q.status, q.notes, q.template, q.total_ht, q.total_ttc, now, now))
         self.conn.commit()
         return c.lastrowid
 
     def update_quote(self, q: Quote):
         c = self.conn.cursor()
+        now = datetime.now().isoformat()
         c.execute("""UPDATE quotes SET customer_id=?, date=?, valid_until=?, status=?,
-                     notes=?, template=?, total_ht=?, total_ttc=? WHERE id=?""",
+                     notes=?, template=?, total_ht=?, total_ttc=?, updated_at=? WHERE id=?""",
                   (q.customer_id, q.date, q.valid_until, q.status,
-                   q.notes, q.template, q.total_ht, q.total_ttc, q.id))
+                   q.notes, q.template, q.total_ht, q.total_ttc, now, q.id))
         self.conn.commit()
 
     def update_quote_status(self, id, status):
         c = self.conn.cursor()
-        c.execute("UPDATE quotes SET status = ? WHERE id = ?", (status, id))
+        now = datetime.now().isoformat()
+        c.execute("UPDATE quotes SET status = ?, updated_at = ? WHERE id = ?", (status, now, id))
         self.conn.commit()
 
     def update_quote_pdf(self, id, path):
         c = self.conn.cursor()
-        c.execute("UPDATE quotes SET pdf_path = ? WHERE id = ?", (path, id))
+        now = datetime.now().isoformat()
+        c.execute("UPDATE quotes SET pdf_path = ?, updated_at = ? WHERE id = ?", (path, now, id))
         self.conn.commit()
 
     def delete_quote(self, id):
@@ -638,24 +707,28 @@ class Database:
 
     def insert_delivery_note(self, dn: DeliveryNote):
         c = self.conn.cursor()
-        c.execute("""INSERT INTO delivery_notes (delivery_number, quote_id, customer_id, date, notes, total_ht, total_ttc)
-                     VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                  (dn.delivery_number, dn.quote_id, dn.customer_id,
-                   dn.date, dn.notes, dn.total_ht, dn.total_ttc))
+        now = datetime.now().isoformat()
+        dnum = dn.delivery_number or self._next_doc_number("DN")
+        c.execute("""INSERT INTO delivery_notes (delivery_number, quote_id, customer_id, date, notes, total_ht, total_ttc, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                  (dnum, dn.quote_id, dn.customer_id,
+                   dn.date, dn.notes, dn.total_ht, dn.total_ttc, now, now))
         self.conn.commit()
         return c.lastrowid
 
     def update_delivery_note(self, dn: DeliveryNote):
         c = self.conn.cursor()
+        now = datetime.now().isoformat()
         c.execute("""UPDATE delivery_notes SET delivery_number=?, quote_id=?, customer_id=?,
-                     date=?, notes=?, total_ht=?, total_ttc=? WHERE id=?""",
+                     date=?, notes=?, total_ht=?, total_ttc=?, updated_at=? WHERE id=?""",
                   (dn.delivery_number, dn.quote_id, dn.customer_id,
-                   dn.date, dn.notes, dn.total_ht, dn.total_ttc, dn.id))
+                   dn.date, dn.notes, dn.total_ht, dn.total_ttc, now, dn.id))
         self.conn.commit()
 
     def update_dn_pdf(self, id, path):
         c = self.conn.cursor()
-        c.execute("UPDATE delivery_notes SET pdf_path = ? WHERE id = ?", (path, id))
+        now = datetime.now().isoformat()
+        c.execute("UPDATE delivery_notes SET pdf_path = ?, updated_at = ? WHERE id = ?", (path, now, id))
         self.conn.commit()
 
     def get_last_dn_id(self):
@@ -694,32 +767,37 @@ class Database:
 
     def insert_invoice(self, inv: Invoice):
         c = self.conn.cursor()
-        c.execute("""INSERT INTO invoices (invoice_number, quote_id, delivery_note_id, customer_id, date, due_date, status, notes, total_ht, total_tva, total_ttc)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                  (inv.invoice_number, inv.quote_id, inv.delivery_note_id,
+        now = datetime.now().isoformat()
+        inum = inv.invoice_number or self._next_doc_number("I")
+        c.execute("""INSERT INTO invoices (invoice_number, quote_id, delivery_note_id, customer_id, date, due_date, status, notes, total_ht, total_tva, total_ttc, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                  (inum, inv.quote_id, inv.delivery_note_id,
                    inv.customer_id, inv.date, inv.due_date, inv.status,
-                   inv.notes, inv.total_ht, inv.total_tva, inv.total_ttc))
+                   inv.notes, inv.total_ht, inv.total_tva, inv.total_ttc, now, now))
         self.conn.commit()
         return c.lastrowid
 
     def update_invoice(self, inv: Invoice):
         c = self.conn.cursor()
+        now = datetime.now().isoformat()
         c.execute("""UPDATE invoices SET invoice_number=?, quote_id=?, delivery_note_id=?,
                      customer_id=?, date=?, due_date=?, status=?, notes=?,
-                     total_ht=?, total_tva=?, total_ttc=? WHERE id=?""",
+                     total_ht=?, total_tva=?, total_ttc=?, updated_at=? WHERE id=?""",
                   (inv.invoice_number, inv.quote_id, inv.delivery_note_id,
                    inv.customer_id, inv.date, inv.due_date, inv.status,
-                   inv.notes, inv.total_ht, inv.total_tva, inv.total_ttc, inv.id))
+                   inv.notes, inv.total_ht, inv.total_tva, inv.total_ttc, now, inv.id))
         self.conn.commit()
 
     def update_invoice_status(self, id, status):
         c = self.conn.cursor()
-        c.execute("UPDATE invoices SET status = ? WHERE id = ?", (status, id))
+        now = datetime.now().isoformat()
+        c.execute("UPDATE invoices SET status = ?, updated_at = ? WHERE id = ?", (status, now, id))
         self.conn.commit()
 
     def update_invoice_pdf(self, id, path):
         c = self.conn.cursor()
-        c.execute("UPDATE invoices SET pdf_path = ? WHERE id = ?", (path, id))
+        now = datetime.now().isoformat()
+        c.execute("UPDATE invoices SET pdf_path = ?, updated_at = ? WHERE id = ?", (path, now, id))
         self.conn.commit()
 
     def recalc_invoice_status(self, invoice_id):
@@ -727,11 +805,11 @@ class Database:
         if not inv: return
         total_paid = self.get_total_paid(invoice_id)
         if total_paid >= inv.total_ttc and inv.total_ttc > 0:
-            new_status = "paid"
+            new_status = "completed"
         elif total_paid > 0:
             new_status = "partial"
         else:
-            new_status = "unpaid"
+            new_status = "draft"
         self.update_invoice_status(invoice_id, new_status)
 
     def get_last_invoice_id(self):
@@ -807,9 +885,11 @@ class Database:
 
     def insert_payment(self, p: Payment):
         c = self.conn.cursor()
-        c.execute("""INSERT INTO payments (invoice_id, amount, date, method, reference, notes)
-                     VALUES (?, ?, ?, ?, ?, ?)""",
-                  (p.invoice_id, p.amount, p.date, p.method, p.reference, p.notes))
+        now = datetime.now().isoformat()
+        pnum = p.payment_number or self._next_doc_number("P")
+        c.execute("""INSERT INTO payments (payment_number, invoice_id, amount, date, method, reference, notes, status, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                  (pnum, p.invoice_id, p.amount, p.date, p.method, p.reference, p.notes, p.status, now, now))
         self.conn.commit()
         return c.lastrowid
 
@@ -829,7 +909,7 @@ class Database:
         customers = c.execute("SELECT COUNT(*) FROM customers").fetchone()[0]
         quotes = c.execute("SELECT COUNT(*) FROM quotes").fetchone()[0]
         invoices = c.execute("SELECT COUNT(*) FROM invoices").fetchone()[0]
-        pending = c.execute("SELECT COUNT(*) FROM invoices WHERE status IN ('unpaid','partial')").fetchone()[0]
+        pending = c.execute("SELECT COUNT(*) FROM invoices WHERE status IN ('draft','sent','partial')").fetchone()[0]
         revenue = c.execute("SELECT COALESCE(SUM(amount),0) FROM payments").fetchone()[0]
         delivery_notes = c.execute("SELECT COUNT(*) FROM delivery_notes").fetchone()[0]
         payments = c.execute("SELECT COUNT(*) FROM payments").fetchone()[0]
