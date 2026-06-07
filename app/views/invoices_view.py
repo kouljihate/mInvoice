@@ -1,5 +1,6 @@
 import flet as ft, os, base64, webbrowser
-from app.ui_helper import make_appbar, card, status_badge, primary_button
+from app.i18n import tr
+from app.ui_helper import card, status_badge, primary_button, page_layout
 from app.theme import PRIMARY, BACKGROUND
 
 
@@ -8,7 +9,7 @@ def invoices_view(page, navigate):
         if inv.pdf_path and os.path.exists(inv.pdf_path):
             os.startfile(inv.pdf_path)
         else:
-            page.snack_bar = ft.SnackBar(ft.Text("No PDF generated yet."))
+            page.snack_bar = ft.SnackBar(ft.Text(tr(page, "no_pdf")))
             page.snack_bar.open = True
             page.update()
 
@@ -16,7 +17,7 @@ def invoices_view(page, navigate):
         docs = page.db.get_all_invoices()
         rows.controls.clear()
         if not docs:
-            rows.controls.append(ft.Text("No invoices yet.", color="#6B7280"))
+            rows.controls.append(ft.Text(tr(page, "no_invoices"), color="#6B7280"))
         else:
             for inv in docs:
                 cname = page.db.get_customer(inv.customer_id).name if inv.customer_id else "N/A"
@@ -41,10 +42,8 @@ def invoices_view(page, navigate):
     rows = ft.Column(spacing=8, scroll=ft.ScrollMode.AUTO)
     page.controls.clear()
     page.bgcolor = BACKGROUND
-    page.add(ft.Column([
-        make_appbar(page, navigate, "Invoices", back_route="/dashboard"),
-        ft.Container(content=rows, expand=True, padding=16),
-    ], expand=True, spacing=0))
+    page.add(page_layout(page, navigate, "Invoices", back_route="/dashboard",
+                content=ft.Container(content=rows, expand=True, padding=16)))
     page.update()
     load()
 
@@ -150,9 +149,8 @@ def invoice_view_view(page, navigate, invoice_id):
     remaining = inv.total_ht - paid_total
     page.controls.clear()
     page.bgcolor = BACKGROUND
-    page.add(ft.Column([
-        make_appbar(page, navigate, f"{inv.invoice_number}", back_route="/invoices"),
-        ft.Container(
+    page.add(page_layout(page, navigate, f"{inv.invoice_number}", back_route="/invoices",
+        content=ft.Container(
             content=ft.Column([
                 ft.Container(
                     content=ft.Column([
@@ -185,8 +183,7 @@ def invoice_view_view(page, navigate, invoice_id):
                 ft.TextButton("Edit Template", icon=ft.Icons.EDIT, on_click=edit_template, style=ft.ButtonStyle(color=PRIMARY)),
             ], scroll=ft.ScrollMode.AUTO, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             padding=16, expand=True,
-        ),
-    ], expand=True, spacing=0))
+        )))
     page.update()
 
 
@@ -273,8 +270,6 @@ def invoice_pdf_view(page, navigate, invoice_id):
 
     page.controls.clear()
     page.bgcolor = BACKGROUND
-    page.add(ft.Column([
-        make_appbar(page, navigate, f"PDF - {inv.invoice_number}", back_route=f"/view_invoice/{invoice_id}"),
-        ft.Container(content=ft.Column(rows, scroll=ft.ScrollMode.AUTO, horizontal_alignment=ft.CrossAxisAlignment.CENTER), padding=16, expand=True),
-    ], expand=True, spacing=0))
+    page.add(page_layout(page, navigate, f"PDF - {inv.invoice_number}", back_route=f"/view_invoice/{invoice_id}",
+        content=ft.Container(content=ft.Column(rows, scroll=ft.ScrollMode.AUTO, horizontal_alignment=ft.CrossAxisAlignment.CENTER), padding=16, expand=True)))
     page.update()

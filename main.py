@@ -23,6 +23,7 @@ def main(page: ft.Page):
 
     def navigate(route):
         try:
+            page.session.store.set("current_route", route)
             page.controls.clear()
             page.overlay.clear()
             if route in ("/", "/login"):

@@ -20,14 +20,23 @@ def border_all(width=1, color=BORDER_COLOR):
     return ft.Border(left=side, top=side, right=side, bottom=side)
 
 
-FONT_FAMILY = "Comfortaa"
+FONT_COMFORTAA = "Comfortaa"
+FONT_REEM = "ReemKufiFun"
+LANG_EN = "en"
+LANG_AR = "ar"
+LANG_FR = "fr"
+LANG_NAMES = {LANG_EN: "EN", LANG_AR: "AR", LANG_FR: "FR"}
+LANG_FONTS = {LANG_EN: FONT_COMFORTAA, LANG_FR: FONT_COMFORTAA, LANG_AR: FONT_REEM}
 
 def apply_theme(page: ft.Page):
+    lang = LANG_EN
+    font = LANG_FONTS.get(lang, FONT_COMFORTAA)
     page.fonts = {
-        FONT_FAMILY: "https://github.com/google/fonts/raw/main/ofl/comfortaa/Comfortaa%5Bwght%5D.ttf",
+        FONT_COMFORTAA: "https://github.com/google/fonts/raw/main/ofl/comfortaa/Comfortaa%5Bwght%5D.ttf",
+        FONT_REEM: "https://github.com/google/fonts/raw/main/ofl/reemkufifun/ReemKufiFun%5Bwght%5D.ttf",
     }
     page.theme = ft.Theme(
-        font_family=FONT_FAMILY,
+        font_family=font,
         color_scheme=ft.ColorScheme(
             primary=PRIMARY,
             primary_container=PRIMARY_LIGHT,

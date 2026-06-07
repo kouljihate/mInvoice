@@ -1,5 +1,6 @@
 import flet as ft, os
-from app.ui_helper import make_appbar, card, status_badge, primary_button
+from app.i18n import tr
+from app.ui_helper import card, status_badge, primary_button, page_layout
 from app.theme import PRIMARY, BACKGROUND
 
 
@@ -8,7 +9,7 @@ def quotes_view(page, navigate):
         quotes = page.db.get_all_quotes()
         rows.controls.clear()
         if not quotes:
-            rows.controls.append(ft.Text("No quotes yet. Tap + to add.", color="#6B7280"))
+            rows.controls.append(ft.Text(tr(page, "no_quotes"), color="#6B7280"))
         else:
             for q in quotes:
                 cname = page.db.get_customer(q.customer_id).name if q.customer_id else "N/A"
@@ -36,7 +37,7 @@ def quotes_view(page, navigate):
         if q.pdf_path and os.path.exists(q.pdf_path):
             os.startfile(q.pdf_path)
         else:
-            page.snack_bar = ft.SnackBar(ft.Text("No PDF yet. Validate the quote first."))
+            page.snack_bar = ft.SnackBar(ft.Text(tr(page, "no_pdf_validate")))
             page.snack_bar.open = True
             page.update()
 
@@ -45,21 +46,19 @@ def quotes_view(page, navigate):
             page.db.delete_quote(qid)
             page.overlay.remove(dlg); page.update(); load()
         dlg = ft.AlertDialog(
-            title=ft.Text("Delete Quote?"),
-            content=ft.Text("This will permanently delete this quote.", size=14),
-            actions=[ft.TextButton("Cancel", on_click=lambda e: (page.overlay.remove(dlg), page.update())),
-                     ft.FilledButton("Delete", on_click=do_delete, style=ft.ButtonStyle(bgcolor=ft.Colors.RED, color=ft.Colors.WHITE))],
+            title=ft.Text(tr(page, "delete_quote")),
+            content=ft.Text(tr(page, "delete_quote_msg"), size=14),
+            actions=[ft.TextButton(tr(page, "cancel"), on_click=lambda e: (page.overlay.remove(dlg), page.update())),
+                     ft.FilledButton(tr(page, "delete"), on_click=do_delete, style=ft.ButtonStyle(bgcolor=ft.Colors.RED, color=ft.Colors.WHITE))],
         )
         page.overlay.append(dlg); dlg.open = True; page.update()
 
     rows = ft.Column(spacing=8, scroll=ft.ScrollMode.AUTO)
     page.controls.clear()
     page.bgcolor = BACKGROUND
-    page.add(ft.Column([
-        make_appbar(page, navigate, "Quotes", back_route="/dashboard",
-                    actions=[ft.IconButton(ft.Icons.ADD, icon_color=ft.Colors.WHITE, on_click=lambda e: navigate("/add_quote"))]),
-        ft.Container(content=rows, expand=True, padding=16),
-    ], expand=True, spacing=0))
+    page.add(page_layout(page, navigate, tr(page, "quotes"), back_route="/dashboard",
+                actions=[ft.IconButton(ft.Icons.ADD, icon_color=ft.Colors.WHITE, on_click=lambda e: navigate("/add_quote"))],
+                content=ft.Container(content=rows, expand=True, padding=16)))
     page.update()
     load()
 
@@ -211,9 +210,8 @@ def quote_form_view(page, navigate, quote_id=None):
 
     page.controls.clear()
     page.bgcolor = BACKGROUND
-    page.add(ft.Column([
-        make_appbar(page, navigate, title, back_route="/quotes"),
-        ft.Container(
+    page.add(page_layout(page, navigate, title, back_route="/quotes",
+        content=ft.Container(
             content=ft.Column([
                 cust_dd,
                 ft.Divider(height=8, color="transparent"),
@@ -229,8 +227,7 @@ def quote_form_view(page, navigate, quote_id=None):
                 primary_button("Save Quote", on_click=save),
             ], scroll=ft.ScrollMode.AUTO, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             padding=16, expand=True,
-        ),
-    ], expand=True, spacing=0))
+        )))
     page.update()
     if not items_controls.controls:
         add_item_row()
@@ -324,9 +321,8 @@ def quote_view_view(page, navigate, quote_id):
 
     page.controls.clear()
     page.bgcolor = BACKGROUND
-    page.add(ft.Column([
-        make_appbar(page, navigate, f"Quote {q.quote_number}", back_route="/quotes"),
-        ft.Container(
+    page.add(page_layout(page, navigate, f"Quote {q.quote_number}", back_route="/quotes",
+        content=ft.Container(
             content=ft.Column([
                 ft.Container(
                     content=ft.Column([
@@ -354,6 +350,5 @@ def quote_view_view(page, navigate, quote_id):
                 primary_button("Validate (→ BL + Invoice)", on_click=do_validate, disabled=q.status != "draft"),
             ], scroll=ft.ScrollMode.AUTO, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             padding=16, expand=True,
-        ),
-    ], expand=True, spacing=0))
+        )))
     page.update()

@@ -1,5 +1,7 @@
 import flet as ft
 from app.theme import PRIMARY, SECONDARY, CARD_BG, BACKGROUND, BORDER_COLOR, TEXT_SECONDARY, SUCCESS, ERROR, WARNING, border_all
+from app.theme import LANG_EN, LANG_AR, LANG_FR, LANG_NAMES, LANG_FONTS, FONT_COMFORTAA, FONT_REEM
+from app import __version__
 
 
 def make_appbar(page, navigate, title, back_route=None, actions=None):
@@ -69,3 +71,41 @@ def styled_field(label, width=400, **kwargs):
         focused_border_color=PRIMARY,
         **kwargs
     )
+
+
+def language_bar(page):
+    current = page.session.store.get("lang") or LANG_EN
+    def switch_lang(lang):
+        page.session.store.set("lang", lang)
+        font = LANG_FONTS.get(lang, FONT_COMFORTAA)
+        page.theme.font_family = font
+        page.update()
+        page.navigate(page.session.store.get("current_route") or "/dashboard")
+    return ft.Container(
+        content=ft.Column([
+            ft.Divider(height=1, color="#E5E7EB"),
+            ft.Row(
+                [ft.TextButton(
+                    LANG_NAMES[code],
+                    on_click=lambda e, c=code: switch_lang(c),
+                    style=ft.ButtonStyle(
+                        color=PRIMARY if code == current else TEXT_SECONDARY,
+                        bgcolor=ft.Colors.TRANSPARENT,
+                    ),
+                ) for code in [LANG_EN, LANG_FR, LANG_AR]],
+                alignment=ft.MainAxisAlignment.CENTER, spacing=4,
+            ),
+            ft.Text(f"v{__version__} - @koul", size=10, color=TEXT_SECONDARY, text_align=ft.TextAlign.CENTER),
+            ft.Container(height=6),
+        ], spacing=2, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+        bgcolor=ft.Colors.WHITE,
+        padding=ft.Padding(left=0, top=4, right=0, bottom=0),
+    )
+
+
+def page_layout(page, navigate, title, content, back_route=None, actions=None):
+    return ft.Column([
+        make_appbar(page, navigate, title, back_route=back_route, actions=actions),
+        ft.Container(content=content, expand=True, padding=16),
+        language_bar(page),
+    ], expand=True, spacing=0)

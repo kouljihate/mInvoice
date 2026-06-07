@@ -1,5 +1,7 @@
 import flet as ft
 from app.theme import PRIMARY, PRIMARY_LIGHT, SECONDARY, CARD_BG, TEXT_SECONDARY, WARNING, border_all
+from app.ui_helper import language_bar
+from app.i18n import tr
 
 
 def dashboard_view(page, navigate):
@@ -35,19 +37,19 @@ def dashboard_view(page, navigate):
         ft.Container(
             content=ft.Column([
                 ft.Row([
-                    ft.Text("mobile Invoicing", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                    ft.Text(tr(page, "mobile_invoicing"), size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
                     ft.IconButton(ft.Icons.LOGOUT, icon_color=ft.Colors.WHITE_70, on_click=logout),
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                ft.Text(company.name if company else "My Company", size=15, color=ft.Colors.WHITE_70),
+                ft.Text(company.name if company else tr(page, "my_company"), size=15, color=ft.Colors.WHITE_70),
                 ft.Divider(color="rgba(255,255,255,0.15)", height=20),
                 ft.Row([
                     ft.Column([
-                        ft.Text("REVENUE", size=11, color=ft.Colors.WHITE_54),
+                        ft.Text(tr(page, "revenue"), size=11, color=ft.Colors.WHITE_54),
                         ft.Text(f"{(company.currency + ' ' if company else '')}{revenue:,.0f}", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
                     ]),
                     ft.Column([
-                        ft.Text("PENDING", size=11, color=ft.Colors.WHITE_54),
-                        ft.Text(f"{pending} invoices", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                        ft.Text(tr(page, "pending"), size=11, color=ft.Colors.WHITE_54),
+                        ft.Text(f"{pending} {tr(page, 'invoices_count')}", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
                     ], horizontal_alignment=ft.CrossAxisAlignment.END),
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ], spacing=4),
@@ -58,15 +60,16 @@ def dashboard_view(page, navigate):
         ft.Container(
             content=ft.Column([
                 ft.Container(height=6),
-                ft.Row([dash_card("Products", products, ft.Icons.INVENTORY, "#2563EB", "/products"),
-                        dash_card("Customers", customers, ft.Icons.PEOPLE, "#059669", "/customers")], spacing=12),
-                ft.Row([dash_card("Quotes", quotes, ft.Icons.DESCRIPTION, "#D97706", "/quotes"),
-                        dash_card("Invoices", invoices, ft.Icons.RECEIPT, "#7C3AED", "/invoices")], spacing=12),
-                ft.Row([dash_card("BL", delivery_notes, ft.Icons.LOCAL_SHIPPING, "#0891B2", "/delivery_notes"),
-                        dash_card("Payments", payments_count, ft.Icons.PAYMENTS, "#DC2626", "/payments")], spacing=12),
-                ft.Row([dash_card("Low Stock", low_stock, ft.Icons.WARNING_AMBER, WARNING, "/products")], spacing=12),
+                ft.Row([dash_card(tr(page, "products"), products, ft.Icons.INVENTORY, "#2563EB", "/products"),
+                        dash_card(tr(page, "customers"), customers, ft.Icons.PEOPLE, "#059669", "/customers")], spacing=12),
+                ft.Row([dash_card(tr(page, "quotes"), quotes, ft.Icons.DESCRIPTION, "#D97706", "/quotes"),
+                        dash_card(tr(page, "invoices"), invoices, ft.Icons.RECEIPT, "#7C3AED", "/invoices")], spacing=12),
+                ft.Row([dash_card(tr(page, "bl"), delivery_notes, ft.Icons.LOCAL_SHIPPING, "#0891B2", "/delivery_notes"),
+                        dash_card(tr(page, "payments"), payments_count, ft.Icons.PAYMENTS, "#DC2626", "/payments")], spacing=12),
+                ft.Row([dash_card(tr(page, "low_stock"), low_stock, ft.Icons.WARNING_AMBER, WARNING, "/products")], spacing=12),
             ], spacing=8),
-            padding=16, expand=True,
+            padding=ft.Padding(left=16, right=16, top=0, bottom=0), expand=True,
         ),
+        language_bar(page),
     ], expand=True, spacing=0))
     page.update()

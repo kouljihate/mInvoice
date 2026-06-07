@@ -1,6 +1,7 @@
 import flet as ft, shutil, os, csv, json
-from app.ui_helper import make_appbar, card
+from app.ui_helper import card, page_layout
 from app.theme import PRIMARY, BACKGROUND, WARNING
+from app.i18n import tr
 
 
 def products_view(page, navigate):
@@ -8,7 +9,7 @@ def products_view(page, navigate):
         products = page.db.get_all_products()
         rows.controls.clear()
         if not products:
-            rows.controls.append(ft.Text("No products yet. Tap + to add.", color="#6B7280"))
+            rows.controls.append(ft.Text(tr(page, "no_products"), color="#6B7280"))
         else:
             for p in products:
                 photo = ft.Container(width=44, height=44, bgcolor="#E5E7EB", border_radius=8)
@@ -28,8 +29,8 @@ def products_view(page, navigate):
                                     alignment=ft.alignment.Alignment(0, 0),
                                 ) if low_stock else ft.Container(),
                             ], spacing=4),
-                            ft.Text(f"Ref: {p.reference}{pkg}", size=11, color="#6B7280"),
-                            ft.Text(f"Stock: {p.quantity} {p.unit} | {p.unit_price:,.0f} MAD/{p.unit}", size=12,
+                            ft.Text(f"{tr(page, 'ref')}: {p.reference}{pkg}", size=11, color="#6B7280"),
+                            ft.Text(f"{tr(page, 'stock')}: {p.quantity} {p.unit} | {p.unit_price:,.0f} MAD/{p.unit}", size=12,
                                     color=WARNING if low_stock else "#374151"),
                         ], expand=True, spacing=2),
                         ft.IconButton(ft.Icons.EDIT, icon_color="#2563EB", icon_size=20, on_click=lambda e, pid=p.id: navigate(f"/edit_product/{pid}")),
@@ -111,15 +112,13 @@ def products_view(page, navigate):
     rows = ft.Column(spacing=8, scroll=ft.ScrollMode.AUTO)
     page.controls.clear()
     page.bgcolor = BACKGROUND
-    page.add(ft.Column([
-        make_appbar(page, navigate, "Products", back_route="/dashboard",
-                    actions=[
-                        ft.TextButton("Bulk", icon=ft.Icons.UPLOAD_FILE, style=ft.ButtonStyle(color=ft.Colors.WHITE),
-                                     on_click=lambda e: page.run_task(pick_bulk)),
-                        ft.IconButton(ft.Icons.ADD, icon_color=ft.Colors.WHITE, on_click=lambda e: navigate("/add_product")),
-                    ]),
-        ft.Container(content=rows, expand=True, padding=16),
-    ], expand=True, spacing=0))
+    page.add(page_layout(page, navigate, "Products", back_route="/dashboard",
+        actions=[
+            ft.TextButton("Bulk", icon=ft.Icons.UPLOAD_FILE, style=ft.ButtonStyle(color=ft.Colors.WHITE),
+                         on_click=lambda e: page.run_task(pick_bulk)),
+            ft.IconButton(ft.Icons.ADD, icon_color=ft.Colors.WHITE, on_click=lambda e: navigate("/add_product")),
+        ],
+        content=ft.Container(content=rows, expand=True, padding=16)))
     page.update()
     load()
 
@@ -186,9 +185,8 @@ def product_form_view(page, navigate, product_id=None):
     title = "Edit Product" if product_id else "Add Product"
     page.controls.clear()
     page.bgcolor = BACKGROUND
-    page.add(ft.Column([
-        make_appbar(page, navigate, title, back_route="/products"),
-        ft.Container(
+    page.add(page_layout(page, navigate, title, back_route="/products",
+        content=ft.Container(
             content=ft.Column([
                 ft.Container(
                     content=ft.Column([
@@ -210,6 +208,5 @@ def product_form_view(page, navigate, product_id=None):
                 ),
             ], scroll=ft.ScrollMode.AUTO, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             padding=16, expand=True,
-        ),
-    ], expand=True, spacing=0))
+        )))
     page.update()
