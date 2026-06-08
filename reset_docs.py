@@ -1,5 +1,14 @@
 import sqlite3, os
-DB_PATH = os.path.join(os.path.dirname(__file__), "minvoice.db")
+
+DB_DIR = os.path.join(os.path.dirname(__file__), "data", "db")
+dbs = [f for f in os.listdir(DB_DIR) if f.endswith(".db") and not f.endswith(".bak")]
+if not dbs:
+    print("No database found in data/db/")
+    input("Press Enter to exit...")
+    exit(1)
+
+DB_PATH = os.path.join(DB_DIR, dbs[0])
+print(f"Using database: {dbs[0]}")
 
 try:
     conn = sqlite3.connect(DB_PATH, timeout=5)

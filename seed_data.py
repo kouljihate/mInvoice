@@ -268,7 +268,7 @@ def main():
             print(f"  Inserted {i}/100 customers")
 
     db.close()
-    print(f"\nDone! {len(products)} products and {len(customers)} customers inserted into minvoice.db")
+    print(f"\nDone! {len(products)} products and {len(customers)} customers inserted into data/db/minvoice.db")
 
 
 if __name__ == "__main__":

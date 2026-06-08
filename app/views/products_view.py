@@ -5,8 +5,14 @@ from app.i18n import tr
 
 
 def products_view(page, navigate):
-    def load():
-        products = page.db.get_all_products()
+    search_f = ft.TextField(
+        hint_text=tr(page, "search"), prefix_icon=ft.Icons.SEARCH, width=400,
+        border_radius=8, border_color="#E5E7EB", focused_border_color=PRIMARY,
+        on_change=lambda e: load(e.control.value),
+    )
+
+    def load(query=""):
+        products = page.db.search_products(query) if query else page.db.get_all_products()
         rows.controls.clear()
         if not products:
             rows.controls.append(ft.Text(tr(page, "no_products"), color="#6B7280"))
@@ -118,7 +124,9 @@ def products_view(page, navigate):
                          on_click=lambda e: page.run_task(pick_bulk)),
             ft.IconButton(ft.Icons.ADD, icon_color=ft.Colors.WHITE, on_click=lambda e: navigate("/add_product")),
         ],
-        content=ft.Container(content=rows, expand=True, padding=16)))
+        content=ft.Container(
+            content=ft.Column([search_f, rows], spacing=8, scroll=ft.ScrollMode.AUTO),
+            expand=True, padding=16)))
     page.update()
     load()
 

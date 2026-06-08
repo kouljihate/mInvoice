@@ -49,6 +49,8 @@ _translations = {
         "invalid_csv": "Invalid CSV format: missing 'name' column.",
         "imported": "Imported",
         "customer_s": "customer(s)",
+        # Search
+        "search": "Search",
         # Products
         "no_products": "No products yet. Tap + to add.",
         "ref": "Ref",
@@ -253,6 +255,8 @@ _translations = {
         "invalid_csv": "Format CSV invalide : colonne 'name' manquante.",
         "imported": "Importé",
         "customer_s": "client(s)",
+        # Search
+        "search": "Rechercher",
         # Products
         "no_products": "Aucun produit. Appuyez sur + pour ajouter.",
         "ref": "Réf",
@@ -457,6 +461,8 @@ _translations = {
         "invalid_csv": "تنسيق CSV غير صالح",
         "imported": "تم استيراد",
         "customer_s": "عميل/عملاء",
+        # Search
+        "search": "بحث",
         # Products
         "no_products": "لا توجد منتجات بعد. اضغط + للإضافة.",
         "ref": "الرمز",

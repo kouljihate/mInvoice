@@ -107,5 +107,4 @@ def page_layout(page, navigate, title, content, back_route=None, actions=None):
     return ft.Column([
         make_appbar(page, navigate, title, back_route=back_route, actions=actions),
         ft.Container(content=content, expand=True, padding=16),
-        language_bar(page),
     ], expand=True, spacing=0)

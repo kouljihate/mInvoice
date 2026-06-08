@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 *.pyo
 minvoice.db
+data/db/
+*.db.bak
+test_validate.db
 pdfs/
 .gradle/
 .DS_Store

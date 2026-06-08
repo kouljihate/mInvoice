@@ -1,10 +1,16 @@
 import sqlite3
 import os
+import re
+import shutil
 from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Optional, List
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "minvoice.db")
+DATA_DB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "db")
+
+
+def _slugify(text):
+    return re.sub(r'[^a-z0-9_]', '_', text.lower()).strip('_')
 
 
 @dataclass
@@ -178,7 +184,13 @@ class Payment:
 
 class Database:
     def __init__(self):
-        self.conn = sqlite3.connect(DB_PATH)
+        os.makedirs(DATA_DB_DIR, exist_ok=True)
+        dbs = [f for f in os.listdir(DATA_DB_DIR) if f.endswith(".db") and not f.endswith(".bak")]
+        if dbs:
+            self.db_path = os.path.join(DATA_DB_DIR, dbs[0])
+        else:
+            self.db_path = os.path.join(DATA_DB_DIR, "minvoice.db")
+        self.conn = sqlite3.connect(self.db_path)
         self.conn.row_factory = sqlite3.Row
         self._create_tables()
 
@@ -479,6 +491,18 @@ class Database:
         c.execute("SELECT * FROM company WHERE id = 1")
         return self._row_to_company(c.fetchone())
 
+    def _rename_db(self, company_name):
+        target = os.path.join(DATA_DB_DIR, _slugify(company_name) + ".db")
+        if target == self.db_path:
+            return
+        self.conn.close()
+        if os.path.exists(target):
+            os.remove(target)
+        os.rename(self.db_path, target)
+        self.db_path = target
+        self.conn = sqlite3.connect(target)
+        self.conn.row_factory = sqlite3.Row
+
     def save_company(self, company: Company):
         c = self.conn.cursor()
         c.execute("""INSERT OR REPLACE INTO company (id, name, address, city, postal_code,
@@ -489,6 +513,9 @@ class Database:
                    company.ice, company.rc, company.if_tax, company.cnss,
                    company.logo_path, company.currency))
         self.conn.commit()
+        bootstrap = os.path.join(DATA_DB_DIR, "minvoice.db")
+        if self.db_path == bootstrap:
+            self._rename_db(company.name)
 
     # --- USERS ---
     def login(self, username, password):

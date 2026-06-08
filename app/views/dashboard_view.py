@@ -1,6 +1,5 @@
 import flet as ft
 from app.theme import PRIMARY, PRIMARY_LIGHT, SECONDARY, CARD_BG, TEXT_SECONDARY, WARNING, border_all
-from app.ui_helper import language_bar
 from app.i18n import tr
 
 
@@ -70,6 +69,5 @@ def dashboard_view(page, navigate):
             ], spacing=8),
             padding=ft.Padding(left=16, right=16, top=0, bottom=0), expand=True,
         ),
-        language_bar(page),
     ], expand=True, spacing=0))
     page.update()
