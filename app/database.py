@@ -827,6 +827,18 @@ class Database:
         c.execute("UPDATE invoices SET pdf_path = ?, updated_at = ? WHERE id = ?", (path, now, id))
         self.conn.commit()
 
+    def delete_invoice(self, id):
+        inv = self.get_invoice(id)
+        if not inv:
+            return
+        c = self.conn.cursor()
+        c.execute("DELETE FROM payments WHERE invoice_id = ?", (id,))
+        c.execute("DELETE FROM invoice_items WHERE invoice_id = ?", (id,))
+        if inv.delivery_note_id:
+            c.execute("DELETE FROM delivery_notes WHERE id = ?", (inv.delivery_note_id,))
+        c.execute("DELETE FROM invoices WHERE id = ?", (id,))
+        self.conn.commit()
+
     def recalc_invoice_status(self, invoice_id):
         inv = self.get_invoice(invoice_id)
         if not inv: return
@@ -940,8 +952,7 @@ class Database:
         revenue = c.execute("SELECT COALESCE(SUM(amount),0) FROM payments").fetchone()[0]
         delivery_notes = c.execute("SELECT COUNT(*) FROM delivery_notes").fetchone()[0]
         payments = c.execute("SELECT COUNT(*) FROM payments").fetchone()[0]
-        low_stock = self.get_low_stock_count()
-        return products, customers, quotes, invoices, pending, revenue, delivery_notes, payments, low_stock
+        return products, customers, quotes, invoices, pending, revenue, delivery_notes, payments
 
     def close(self):
         self.conn.close()

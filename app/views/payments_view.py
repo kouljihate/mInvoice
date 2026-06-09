@@ -16,6 +16,7 @@ def payments_view(page, navigate):
             for p in payments:
                 inv = page.db.get_invoice(p.invoice_id)
                 inv_label = f"INV #{p.invoice_id}" if inv else f"Inv #{p.invoice_id}"
+                can_edit = inv and inv.status != "draft"
                 rows.controls.append(card(
                     ft.Row([
                         ft.Column([
@@ -28,9 +29,8 @@ def payments_view(page, navigate):
                         ft.Row([
                             ft.Text(f"{p.amount:,.2f}", size=15, weight=ft.FontWeight.BOLD, color="#059669"),
                             ft.IconButton(ft.Icons.EDIT, icon_color=PRIMARY, icon_size=20,
+                                          disabled=not can_edit,
                                           on_click=lambda e, pid=p.id, oi=p.status: edit_pay(pid, oi)),
-                            ft.IconButton(ft.Icons.DELETE, icon_color="#DC2626", icon_size=20,
-                                          on_click=lambda e, pid=p.id, iid=p.invoice_id: delete_pay(pid, iid)),
                         ], spacing=4),
                     ], vertical_alignment=ft.CrossAxisAlignment.CENTER)
                 ))
@@ -52,7 +52,7 @@ def payments_view(page, navigate):
             page.db.conn.commit()
             page.db.recalc_invoice_status(p.invoice_id)
             page.snack_bar = ft.SnackBar(ft.Text(tr(page, "status_updated"), color=ft.Colors.WHITE), bgcolor=ft.Colors.GREEN, open=True)
-            page.overlay.remove(dlg); page.update(); load()
+            dlg.open = False; page.update(); load()
         dlg = ft.AlertDialog(
             title=ft.Text(tr(page, "edit_payment"), size=18, weight=ft.FontWeight.BOLD),
             content=ft.Column([
@@ -76,16 +76,11 @@ def payments_view(page, navigate):
                 status_dd,
             ], spacing=8, tight=True, scroll=ft.ScrollMode.AUTO),
             actions=[
-                ft.TextButton(tr(page, "cancel"), on_click=lambda e: (page.overlay.remove(dlg), page.update(), load())),
+                ft.TextButton(tr(page, "cancel"), on_click=lambda e: (setattr(dlg, 'open', False), page.update(), load())[-1]),
                 ft.FilledButton(tr(page, "save"), on_click=save),
             ],
         )
         page.overlay.append(dlg); dlg.open = True; page.update()
-
-    def delete_pay(pid, iid):
-        page.db.delete_payment(pid)
-        page.db.recalc_invoice_status(iid)
-        load()
 
     rows = ft.Column(spacing=8, scroll=ft.ScrollMode.AUTO)
     page.controls.clear()

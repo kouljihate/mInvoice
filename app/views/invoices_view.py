@@ -13,6 +13,22 @@ def invoices_view(page, navigate):
             page.snack_bar.open = True
             page.update()
 
+    def delete_inv(iid):
+        def do_delete(e):
+            dlg.open = False; page.update()
+            page.db.delete_invoice(iid)
+            load()
+        dlg = ft.AlertDialog(
+            title=ft.Text("Delete Invoice", color="#DC2626", weight=ft.FontWeight.BOLD),
+            content=ft.Text("This will also delete the associated delivery note and all payments. This cannot be undone."),
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda e: (setattr(dlg, 'open', False), page.update())),
+                ft.FilledButton("Delete", on_click=do_delete, style=ft.ButtonStyle(bgcolor="#DC2626", color=ft.Colors.WHITE)),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg); dlg.open = True; page.update()
+
     def load():
         docs = page.db.get_all_invoices()
         rows.controls.clear()
@@ -31,10 +47,14 @@ def invoices_view(page, navigate):
                             ft.Text(f"{inv.total_ht:,.2f}", size=14, weight=ft.FontWeight.BOLD, color="#1A1A2E"),
                             status_badge(inv.status),
                         ], horizontal_alignment=ft.CrossAxisAlignment.END, spacing=4),
-                        ft.IconButton(ft.Icons.REMOVE_RED_EYE, icon_color="#2563EB", icon_size=20,
-                                      on_click=lambda e, iid=inv.id: navigate(f"/view_invoice/{iid}")),
-                        ft.IconButton(ft.Icons.SHARE, icon_color="#0891B2", icon_size=20,
-                                      on_click=lambda e, inv=inv: share_inv(inv)),
+                        ft.Row([
+                            ft.IconButton(ft.Icons.REMOVE_RED_EYE, icon_color="#2563EB", icon_size=20,
+                                          on_click=lambda e, iid=inv.id: navigate(f"/view_invoice/{iid}")),
+                            ft.IconButton(ft.Icons.SHARE, icon_color="#0891B2", icon_size=20,
+                                          on_click=lambda e, inv=inv: share_inv(inv)),
+                            ft.IconButton(ft.Icons.DELETE, icon_color="#DC2626", icon_size=20,
+                                          on_click=lambda e, iid=inv.id: delete_inv(iid)),
+                        ], spacing=0),
                     ], vertical_alignment=ft.CrossAxisAlignment.CENTER)
                 ))
         page.update()
@@ -115,6 +135,22 @@ def invoice_view_view(page, navigate, invoice_id):
         page.overlay.append(dlg)
         page.update()
 
+    def confirm_delete():
+        def do_delete(e):
+            dlg.open = False; page.overlay.remove(dlg); page.update()
+            page.db.delete_invoice(invoice_id)
+            navigate("/invoices")
+        dlg = ft.AlertDialog(
+            title=ft.Text("Delete Invoice", color="#DC2626", weight=ft.FontWeight.BOLD),
+            content=ft.Text("This will also delete the associated delivery note and all payments. This cannot be undone."),
+            actions=[
+                ft.TextButton("Cancel", on_click=lambda e: (setattr(dlg, 'open', False), page.overlay.remove(dlg), page.update())),
+                ft.FilledButton("Delete", on_click=do_delete, style=ft.ButtonStyle(bgcolor="#DC2626", color=ft.Colors.WHITE)),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dlg); dlg.open = True; page.update()
+
     def edit_template(e):
         from app.views.template_editor import edit_template_view
         edit_template_view(page, navigate, "invoice", back_route=f"/view_invoice/{invoice_id}")
@@ -180,6 +216,9 @@ def invoice_view_view(page, navigate, invoice_id):
                 primary_button("Mark as Sent", on_click=mark_sent,
                                disabled=inv.status != "draft"),
                 ft.Container(height=8),
+                ft.Container(height=8),
+                ft.Button("Delete Invoice", icon=ft.Icons.DELETE, on_click=lambda e: confirm_delete(),
+                          style=ft.ButtonStyle(bgcolor="#DC2626", color=ft.Colors.WHITE, shape=ft.RoundedRectangleBorder(radius=10))),
                 ft.TextButton("Edit Template", icon=ft.Icons.EDIT, on_click=edit_template, style=ft.ButtonStyle(color=PRIMARY)),
             ], scroll=ft.ScrollMode.AUTO, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             padding=16, expand=True,

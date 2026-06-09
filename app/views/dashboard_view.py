@@ -1,12 +1,12 @@
 import flet as ft
-from app.theme import PRIMARY, PRIMARY_LIGHT, SECONDARY, CARD_BG, TEXT_SECONDARY, WARNING, border_all
+from app.theme import PRIMARY, PRIMARY_LIGHT, SECONDARY, CARD_BG, TEXT_SECONDARY, border_all
 from app.i18n import tr
 
 
 def dashboard_view(page, navigate):
     company = page.db.get_company()
     stats = page.db.get_dashboard_stats()
-    products, customers, quotes, invoices, pending, revenue, delivery_notes, payments_count, low_stock = stats
+    products, customers, quotes, invoices, pending, revenue, delivery_notes, payments_count = stats
 
     def logout(e):
         page.session.store.set("user_id", None); navigate("/login")
@@ -65,7 +65,6 @@ def dashboard_view(page, navigate):
                         dash_card(tr(page, "invoices"), invoices, ft.Icons.RECEIPT, "#7C3AED", "/invoices")], spacing=12),
                 ft.Row([dash_card(tr(page, "bl"), delivery_notes, ft.Icons.LOCAL_SHIPPING, "#0891B2", "/delivery_notes"),
                         dash_card(tr(page, "payments"), payments_count, ft.Icons.PAYMENTS, "#DC2626", "/payments")], spacing=12),
-                ft.Row([dash_card(tr(page, "low_stock"), low_stock, ft.Icons.WARNING_AMBER, WARNING, "/products")], spacing=12),
             ], spacing=8),
             padding=ft.Padding(left=16, right=16, top=0, bottom=0), expand=True,
         ),
