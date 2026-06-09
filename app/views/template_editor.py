@@ -1,43 +1,63 @@
-import flet as ft
-from app.ui_helper import make_appbar
+import flet as ft, json
+from app.database import TemplateSection
+from app.ui_helper import page_layout, card
 from app.theme import PRIMARY, BACKGROUND
 
 
 def edit_template_view(page, navigate, doc_type, back_route):
     title_map = {"quote": "Quote Template", "delivery_note": "BL Template", "invoice": "Invoice Template"}
-    header_f = ft.TextField(label="Header Text", multiline=True, min_lines=3, width=400, border_radius=8, focused_border_color=PRIMARY)
-    footer_f = ft.TextField(label="Footer Text", multiline=True, min_lines=3, width=400, border_radius=8, focused_border_color=PRIMARY)
+    sections = page.db.get_template_sections(doc_type)
+
+    section_cards = ft.Column(spacing=10)
+
+    def rebuild_section_list():
+        section_cards.controls.clear()
+        for sec in sections:
+            skey = sec.section_key
+            sname = sec.section_name
+            visible_sw = ft.Switch(value=sec.is_visible, active_color=PRIMARY, on_change=lambda e, s=sec: toggle_visible(s, e.control.value))
+            font_sz = ft.TextField(value=str(sec.font_size), width=60, height=40, dense=True, text_size=12,
+                                    on_change=lambda e, s=sec: update_field(s, "font_size", float(e.control.value or 10)),
+                                    border_radius=6)
+            align_dd = ft.Dropdown(value=sec.text_align, width=90, height=40, dense=True, options=[
+                ft.dropdown.Option("left"), ft.dropdown.Option("center"), ft.dropdown.Option("right"),
+            ], on_change=lambda e, s=sec: update_field(s, "text_align", e.control.value), border_radius=6)
+            section_cards.controls.append(card(
+                ft.Column([
+                    ft.Row([
+                        ft.Text(f"{sec.position}. {sname}", size=14, weight=ft.FontWeight.BOLD, color="#1A1A2E", expand=True),
+                        ft.Text("Visible:"), visible_sw,
+                    ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                    ft.Row([
+                        ft.Text("Font size:", size=11, color="#6B7280"), font_sz,
+                        ft.Text("Align:", size=11, color="#6B7280"), align_dd,
+                    ], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                ], spacing=4), padding=14,
+            ))
+        page.update()
+
+    def toggle_visible(sec, val):
+        sec.is_visible = val
+        page.db.save_template_section(sec)
+
+    def update_field(sec, field, val):
+        setattr(sec, field, val)
+        page.db.save_template_section(sec)
+
     error_txt = ft.Text("", color=ft.Colors.RED, size=13)
 
-    tpl = page.db.get_template(doc_type)
-    if tpl: header_f.value = tpl.header_text; footer_f.value = tpl.footer_text
-
-    def save(e):
-        page.db.save_template(doc_type, header_f.value or "", footer_f.value or "")
-        navigate(back_route)
+    rebuild_section_list()
 
     page.controls.clear()
     page.bgcolor = BACKGROUND
-    page.add(ft.Column([
-        make_appbar(page, navigate, title_map.get(doc_type, "Template"), back_route=back_route),
-        ft.Container(
+    page.add(page_layout(page, navigate, title_map.get(doc_type, "Template"), back_route=back_route,
+        content=ft.Container(
             content=ft.Column([
-                ft.Container(
-                    content=ft.Column([
-                        header_f,
-                        ft.Container(height=12),
-                        footer_f,
-                        error_txt,
-                        ft.Container(height=16),
-                        ft.Button("Save Template", width=400, height=48, on_click=save,
-                            style=ft.ButtonStyle(bgcolor=PRIMARY, color=ft.Colors.WHITE,
-                                shape=ft.RoundedRectangleBorder(radius=10), elevation=2)),
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                    bgcolor=ft.Colors.WHITE, padding=24, border_radius=16,
-                    shadow=ft.BoxShadow(blur_radius=8, color="rgba(0,0,0,0.04)", offset=ft.Offset(0, 2)),
-                ),
+                ft.Text("Arrange and customize template sections:", size=13, color="#6B7280"),
+                ft.Divider(height=4, color="transparent"),
+                section_cards,
+                error_txt,
             ], scroll=ft.ScrollMode.AUTO, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             padding=16, expand=True,
-        ),
-    ], expand=True, spacing=0))
+        )))
     page.update()

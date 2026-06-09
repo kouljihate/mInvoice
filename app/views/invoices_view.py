@@ -82,7 +82,7 @@ def invoice_view_view(page, navigate, invoice_id):
             items = page.db.get_invoice_items(invoice_id)
             payments = page.db.get_payments(invoice_id)
             paid_total = sum(p.amount for p in payments)
-            path = generate_invoice_pdf(company, inv, items, payments, paid_total)
+            path = generate_invoice_pdf(company, inv, items, payments, paid_total, db=page.db)
             page.db.update_invoice_pdf(inv.id, path)
             navigate(f"/view_invoice_pdf/{invoice_id}")
         except Exception as ex:

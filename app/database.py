@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import re
+import json
 import shutil
 from datetime import datetime
 from dataclasses import dataclass, field
@@ -26,6 +27,7 @@ class Company:
     ice: str = ""
     rc: str = ""
     if_tax: str = ""
+    tp: str = ""
     cnss: str = ""
     logo_path: str = ""
     currency: str = "MAD"
@@ -165,6 +167,36 @@ class Template:
     doc_type: str = ""
     header_text: str = ""
     footer_text: str = ""
+
+
+@dataclass
+class TemplateSection:
+    id: int = 0
+    doc_type: str = "invoice"
+    section_key: str = ""
+    section_name: str = ""
+    parent_group: str = ""
+    position: int = 0
+    is_visible: bool = True
+    content_type: str = "fields"
+    fields_config: str = "[]"
+    custom_text: str = ""
+    font_size: float = 10.0
+    font_style: str = "normal"
+    text_align: str = "left"
+
+
+DEFAULT_INVOICE_SECTIONS = [
+    ("header_company_info", "Company Info (Logo+Name+Address+Email+ICE)", "header", 1, "fields", '["logo","name","address","email","ice"]', "", 9, "normal", "left"),
+    ("header_customer_info", "Customer Info (Name+Address)", "header", 2, "fields", '["name","address"]', "", 9, "normal", "left"),
+    ("body_title", "Title: INVOICE + Number + Date", "body", 3, "text", "[]", "INVOICE {number} - {date}", 14, "bold", "center"),
+    ("body_attention", "Attention To", "body", 4, "fields", '["attention"]', "", 10, "normal", "left"),
+    ("body_items_table", "Items Table (SKU+Item+Qty+Price+Package+Total)", "body", 5, "table", '["sku","name","qty","price","package","total"]', "", 9, "normal", "left"),
+    ("body_note1", "Note 1 (entered during creation)", "body", 6, "text", "[]", "{note1}", 9, "normal", "left"),
+    ("body_note2", "Note 2 (entered during creation)", "body", 7, "text", "[]", "{note2}", 9, "normal", "left"),
+    ("footer_left", "Footer Left (Name+Address+Phone+Email)", "footer", 8, "fields", '["name","address","phone","email"]', "", 8, "normal", "left"),
+    ("footer_right", "Footer Right (IF+TP+RC)", "footer", 9, "fields", '["if_tax","tp","rc"]', "", 8, "normal", "right"),
+]
 
 
 @dataclass
@@ -320,6 +352,22 @@ class Database:
                 created_at TEXT DEFAULT '',
                 updated_at TEXT DEFAULT ''
             );
+            CREATE TABLE IF NOT EXISTS template_sections (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                doc_type TEXT NOT NULL DEFAULT 'invoice',
+                section_key TEXT NOT NULL,
+                section_name TEXT NOT NULL DEFAULT '',
+                parent_group TEXT NOT NULL DEFAULT '',
+                position INTEGER NOT NULL DEFAULT 0,
+                is_visible INTEGER NOT NULL DEFAULT 1,
+                content_type TEXT NOT NULL DEFAULT 'fields',
+                fields_config TEXT NOT NULL DEFAULT '[]',
+                custom_text TEXT NOT NULL DEFAULT '',
+                font_size REAL NOT NULL DEFAULT 10.0,
+                font_style TEXT NOT NULL DEFAULT 'normal',
+                text_align TEXT NOT NULL DEFAULT 'left',
+                UNIQUE(doc_type, section_key)
+            );
         """)
         self.conn.commit()
         self._migrate_company()
@@ -330,7 +378,7 @@ class Database:
 
     def _migrate_company(self):
         c = self.conn.cursor()
-        new_cols = ["city", "postal_code", "ice", "rc", "if_tax", "cnss", "logo_path"]
+        new_cols = ["city", "postal_code", "ice", "rc", "if_tax", "tp", "cnss", "logo_path"]
         for col in new_cols:
             try:
                 c.execute(f"ALTER TABLE company ADD COLUMN {col} TEXT DEFAULT ''")
@@ -350,6 +398,7 @@ class Database:
             ice=row["ice"] if "ice" in row.keys() else "",
             rc=row["rc"] if "rc" in row.keys() else "",
             if_tax=row["if_tax"] if "if_tax" in row.keys() else "",
+            tp=row["tp"] if "tp" in row.keys() else "",
             cnss=row["cnss"] if "cnss" in row.keys() else "",
             logo_path=row["logo_path"] if "logo_path" in row.keys() else "",
             currency=row["currency"]
@@ -506,11 +555,11 @@ class Database:
     def save_company(self, company: Company):
         c = self.conn.cursor()
         c.execute("""INSERT OR REPLACE INTO company (id, name, address, city, postal_code,
-                     phone, email, website, tax_id, ice, rc, if_tax, cnss, logo_path, currency)
-                     VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                     phone, email, website, tax_id, ice, rc, if_tax, tp, cnss, logo_path, currency)
+                     VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                   (company.name, company.address, company.city, company.postal_code,
                    company.phone, company.email, company.website, company.tax_id,
-                   company.ice, company.rc, company.if_tax, company.cnss,
+                   company.ice, company.rc, company.if_tax, company.tp, company.cnss,
                    company.logo_path, company.currency))
         self.conn.commit()
         bootstrap = os.path.join(DATA_DB_DIR, "minvoice.db")
@@ -900,6 +949,54 @@ class Database:
                      VALUES (?, ?, ?)""", (doc_type, header_text, footer_text))
         self.conn.commit()
 
+    # --- TEMPLATE SECTIONS ---
+    def _row_to_template_section(self, row):
+        if not row:
+            return None
+        return TemplateSection(
+            id=row["id"], doc_type=row["doc_type"],
+            section_key=row["section_key"], section_name=row["section_name"],
+            parent_group=row["parent_group"], position=row["position"],
+            is_visible=bool(row["is_visible"]), content_type=row["content_type"],
+            fields_config=row["fields_config"], custom_text=row["custom_text"],
+            font_size=row["font_size"], font_style=row["font_style"],
+            text_align=row["text_align"],
+        )
+
+    def get_template_sections(self, doc_type="invoice"):
+        c = self.conn.cursor()
+        c.execute("SELECT * FROM template_sections WHERE doc_type = ? ORDER BY position", (doc_type,))
+        return [self._row_to_template_section(row) for row in c.fetchall()]
+
+    def save_template_section(self, sec: TemplateSection):
+        c = self.conn.cursor()
+        c.execute("""INSERT OR REPLACE INTO template_sections
+                     (doc_type, section_key, section_name, parent_group, position,
+                      is_visible, content_type, fields_config, custom_text,
+                      font_size, font_style, text_align)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                  (sec.doc_type, sec.section_key, sec.section_name, sec.parent_group,
+                   sec.position, int(sec.is_visible), sec.content_type, sec.fields_config,
+                   sec.custom_text, sec.font_size, sec.font_style, sec.text_align))
+        self.conn.commit()
+
+    def delete_template_section(self, section_id):
+        c = self.conn.cursor()
+        c.execute("DELETE FROM template_sections WHERE id = ?", (section_id,))
+        self.conn.commit()
+
+    def create_default_invoice_template(self):
+        existing = self.get_template_sections("invoice")
+        if existing:
+            return
+        for key, name, group, pos, ctype, fields, text, fsize, fstyle, align in DEFAULT_INVOICE_SECTIONS:
+            self.save_template_section(TemplateSection(
+                doc_type="invoice", section_key=key, section_name=name,
+                parent_group=group, position=pos, is_visible=True,
+                content_type=ctype, fields_config=fields, custom_text=text,
+                font_size=fsize, font_style=fstyle, text_align=align,
+            ))
+
     # --- PAYMENTS ---
     def get_payments(self, invoice_id):
         c = self.conn.cursor()
@@ -941,18 +1038,124 @@ class Database:
         c = self.conn.cursor()
         return c.execute("SELECT COUNT(*) FROM products WHERE alert_stock > 0 AND quantity <= alert_stock").fetchone()[0]
 
-    # --- MISC ---
-    def get_dashboard_stats(self):
+    def get_dashboard_data(self):
         c = self.conn.cursor()
-        products = c.execute("SELECT COUNT(*) FROM products").fetchone()[0]
-        customers = c.execute("SELECT COUNT(*) FROM customers").fetchone()[0]
-        quotes = c.execute("SELECT COUNT(*) FROM quotes").fetchone()[0]
-        invoices = c.execute("SELECT COUNT(*) FROM invoices").fetchone()[0]
-        pending = c.execute("SELECT COUNT(*) FROM invoices WHERE status IN ('draft','sent','partial')").fetchone()[0]
-        revenue = c.execute("SELECT COALESCE(SUM(amount),0) FROM payments").fetchone()[0]
-        delivery_notes = c.execute("SELECT COUNT(*) FROM delivery_notes").fetchone()[0]
-        payments = c.execute("SELECT COUNT(*) FROM payments").fetchone()[0]
-        return products, customers, quotes, invoices, pending, revenue, delivery_notes, payments
+        today = datetime.now().strftime("%Y-%m-%d")
+        month_start = datetime.now().strftime("%Y-%m-01")
+
+        # KPI: sales this month
+        sales_month = c.execute("SELECT COALESCE(SUM(amount),0) FROM payments WHERE date >= ?", (month_start,)).fetchone()[0]
+
+        # KPI: invoiced this month
+        invoiced_month = c.execute("SELECT COALESCE(SUM(total_ttc),0) FROM invoices WHERE date >= ?", (month_start,)).fetchone()[0]
+
+        # KPI: paid this month (same as sales_month)
+        paid_month = sales_month
+
+        # KPI: outstanding receivables (sum of total_ttc - paid where not completed)
+        c.execute("""SELECT COALESCE(SUM(i.total_ttc - COALESCE(p.paid,0)),0) FROM invoices i
+                     LEFT JOIN (SELECT invoice_id, SUM(amount) as paid FROM payments GROUP BY invoice_id) p ON i.id = p.invoice_id
+                     WHERE i.status != 'completed' AND i.status != 'draft'""")
+        outstanding = c.fetchone()[0]
+
+        # KPI: overdue invoices count
+        overdue_count = c.execute("SELECT COUNT(*) FROM invoices WHERE due_date < ? AND due_date != '' AND status IN ('sent','partial')", (today,)).fetchone()[0]
+
+        # KPI: overdue invoices total amount
+        c.execute("""SELECT COALESCE(SUM(i.total_ttc - COALESCE(p.paid,0)),0) FROM invoices i
+                     LEFT JOIN (SELECT invoice_id, SUM(amount) as paid FROM payments GROUP BY invoice_id) p ON i.id = p.invoice_id
+                     WHERE i.due_date < ? AND i.due_date != '' AND i.status IN ('sent','partial')""", (today,))
+        overdue_amount = c.fetchone()[0]
+
+        # KPI: stock value
+        stock_value = c.execute("SELECT COALESCE(SUM(unit_price * quantity),0) FROM products").fetchone()[0]
+
+        # KPI: low-stock items
+        low_stock = c.execute("SELECT COUNT(*) FROM products WHERE alert_stock > 0 AND quantity <= alert_stock").fetchone()[0]
+
+        # KPI: out-of-stock items
+        out_of_stock = c.execute("SELECT COUNT(*) FROM products WHERE quantity <= 0").fetchone()[0]
+
+        # KPI: new customers this month
+        new_customers = c.execute("SELECT COUNT(*) FROM customers WHERE id NOT IN (SELECT DISTINCT customer_id FROM invoices)").fetchone()[0]
+
+        # Stock signals: below reorder point
+        below_reorder = c.execute("SELECT COUNT(*) FROM products WHERE alert_stock > 0 AND quantity < alert_stock").fetchone()[0]
+
+        # Stock signals: fast-moving products (top 5 by total qty sold)
+        fast_moving = c.execute("""SELECT product_name, SUM(quantity) as total_sold FROM invoice_items
+                                   GROUP BY product_id ORDER BY total_sold DESC LIMIT 5""").fetchall()
+        fast_moving = [dict(r) for r in fast_moving]
+
+        # Invoice signals: draft/sent/paid counts
+        draft_inv = c.execute("SELECT COUNT(*) FROM invoices WHERE status = 'draft'").fetchone()[0]
+        sent_inv = c.execute("SELECT COUNT(*) FROM invoices WHERE status = 'sent'").fetchone()[0]
+        paid_inv = c.execute("SELECT COUNT(*) FROM invoices WHERE status = 'completed'").fetchone()[0]
+        partial_inv = c.execute("SELECT COUNT(*) FROM invoices WHERE status = 'partial'").fetchone()[0]
+
+        # Customer signals: active customers (have invoices)
+        active_customers = c.execute("SELECT COUNT(DISTINCT customer_id) FROM invoices").fetchone()[0]
+
+        # Top customers by revenue
+        top_customers = c.execute("""SELECT c.name, COALESCE(SUM(i.total_ttc),0) as revenue
+                                      FROM customers c
+                                      JOIN invoices i ON c.id = i.customer_id
+                                      GROUP BY c.id ORDER BY revenue DESC LIMIT 5""").fetchall()
+        top_customers = [dict(r) for r in top_customers]
+
+        # Customers with overdue balances
+        overdue_customers = c.execute("""SELECT COUNT(DISTINCT i.customer_id) FROM invoices i
+                                          WHERE i.due_date < ? AND i.due_date != '' AND i.status IN ('sent','partial')""", (today,)).fetchone()[0]
+
+        # Top 10 products by revenue
+        top_products = c.execute("""SELECT product_name, SUM(quantity * unit_price) as revenue
+                                     FROM invoice_items GROUP BY product_id
+                                     ORDER BY revenue DESC LIMIT 10""").fetchall()
+        top_products = [dict(r) for r in top_products]
+
+        # Invoice status breakdown
+        status_breakdown = {"draft": draft_inv, "sent": sent_inv, "partial": partial_inv, "paid": paid_inv}
+
+        # Quote signals
+        draft_quotes = c.execute("SELECT COUNT(*) FROM quotes WHERE status = 'draft'").fetchone()[0]
+        validated_quotes = c.execute("SELECT COUNT(*) FROM quotes WHERE status = 'validated'").fetchone()[0]
+        sent_quotes = c.execute("SELECT COUNT(*) FROM quotes WHERE status = 'sent'").fetchone()[0]
+        confirmed_quotes = c.execute("SELECT COUNT(*) FROM quotes WHERE status = 'confirmed'").fetchone()[0]
+        quotes_month = c.execute("SELECT COUNT(*) FROM quotes WHERE date >= ?", (month_start,)).fetchone()[0]
+        quotes_amount_month = c.execute("SELECT COALESCE(SUM(total_ttc),0) FROM quotes WHERE date >= ?", (month_start,)).fetchone()[0]
+        quotes_converted = c.execute("SELECT COUNT(*) FROM quotes WHERE status = 'confirmed' AND id IN (SELECT DISTINCT quote_id FROM invoices)").fetchone()[0]
+
+        # Total counts
+        total_products = c.execute("SELECT COUNT(*) FROM products").fetchone()[0]
+        total_customers = c.execute("SELECT COUNT(*) FROM customers").fetchone()[0]
+        total_invoices = c.execute("SELECT COUNT(*) FROM invoices").fetchone()[0]
+        total_quotes = c.execute("SELECT COUNT(*) FROM quotes").fetchone()[0]
+        total_payments = c.execute("SELECT COUNT(*) FROM payments").fetchone()[0]
+
+        # Sales trend by month (last 6 months for simplicity using a bar representation)
+        sales_trend = c.execute("""SELECT strftime('%m', date) as m, strftime('%Y', date) as y, SUM(amount) as total
+                                    FROM payments WHERE date >= date('now', '-6 months')
+                                    GROUP BY y, m ORDER BY y, m""").fetchall()
+        sales_trend = [dict(r) for r in sales_trend]
+
+        return dict(
+            sales_month=sales_month, invoiced_month=invoiced_month, paid_month=paid_month,
+            outstanding=outstanding, overdue_count=overdue_count, overdue_amount=overdue_amount,
+            stock_value=stock_value, low_stock=low_stock, out_of_stock=out_of_stock,
+            new_customers=new_customers, below_reorder=below_reorder,
+            fast_moving=fast_moving,
+            draft_inv=draft_inv, sent_inv=sent_inv, paid_inv=paid_inv, partial_inv=partial_inv,
+            active_customers=active_customers, top_customers=top_customers,
+            overdue_customers=overdue_customers, top_products=top_products,
+            status_breakdown=status_breakdown,
+            draft_quotes=draft_quotes, validated_quotes=validated_quotes,
+            sent_quotes=sent_quotes, confirmed_quotes=confirmed_quotes,
+            quotes_month=quotes_month, quotes_amount_month=quotes_amount_month,
+            quotes_converted=quotes_converted,
+            total_products=total_products, total_customers=total_customers,
+            total_invoices=total_invoices, total_quotes=total_quotes, total_payments=total_payments,
+            sales_trend=sales_trend,
+        )
 
     def close(self):
         self.conn.close()

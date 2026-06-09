@@ -1,12 +1,49 @@
 import os
+import json
 from datetime import datetime
 from fpdf import FPDF
 
 PDF_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "pdfs")
-
-
+FONTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "fonts")
 def ensure_pdf_dir():
     os.makedirs(PDF_DIR, exist_ok=True)
+
+
+def _ensure_fonts():
+    os.makedirs(FONTS_DIR, exist_ok=True)
+    regular = os.path.join(FONTS_DIR, "Comfortaa-Regular.ttf")
+    bold = os.path.join(FONTS_DIR, "Comfortaa-Bold.ttf")
+    if os.path.exists(regular) and os.path.exists(bold):
+        return True
+    try:
+        import urllib.request
+        url = "https://github.com/google/fonts/raw/main/ofl/comfortaa/Comfortaa%5Bwght%5D.ttf"
+        if not os.path.exists(regular):
+            urllib.request.urlretrieve(url, regular)
+        if not os.path.exists(bold):
+            import shutil
+            shutil.copy2(regular, bold)
+        return True
+    except Exception:
+        return False
+
+
+def _try_add_fonts(pdf):
+    _ensure_fonts()
+    comfortaa_regular = os.path.join(FONTS_DIR, "Comfortaa-Regular.ttf")
+    comfortaa_bold = os.path.join(FONTS_DIR, "Comfortaa-Bold.ttf")
+    if os.path.exists(comfortaa_regular) and os.path.exists(comfortaa_bold):
+        pdf.add_font("Comfortaa", "", comfortaa_regular, uni=True)
+        pdf.add_font("Comfortaa", "B", comfortaa_bold, uni=True)
+        return True
+    return False
+
+
+def _use_font(pdf, style="", size=10):
+    if hasattr(pdf, "_comfortaa_loaded") and pdf._comfortaa_loaded:
+        pdf.set_font("Comfortaa", style, size)
+    else:
+        pdf.set_font("Helvetica", style, size)
 
 
 class DocTemplate:
@@ -18,28 +55,29 @@ class DocTemplate:
         self.columns = []
         self.notes_label = "Notes:"
 
-    def build(self, items, total_ht, total_ttc, notes=""):
+    def _init_pdf(self):
         pdf = FPDF()
+        pdf._comfortaa_loaded = _try_add_fonts(pdf)
+        return pdf
+
+    def build(self, items, total_ht, total_ttc, notes=""):
+        pdf = self._init_pdf()
         pdf.add_page()
 
-        # Header with company info
         if self.company:
             c = self.company
             col_left = 10
-            col_right = 110
-            pdf.set_font("Helvetica", "B", 14)
+            _use_font(pdf, "B", 14)
             pdf.set_xy(col_left, 10)
             pdf.cell(0, 8, c.name)
 
-            # Logo
             if c.logo_path and os.path.exists(c.logo_path):
                 try:
                     pdf.image(c.logo_path, x=160, y=8, w=40)
                 except Exception:
                     pass
 
-            pdf.set_xy(col_left, 20)
-            pdf.set_font("Helvetica", "", 8)
+            _use_font(pdf, "", 8)
             y = 20
             if c.address:
                 addr = c.address
@@ -64,24 +102,21 @@ class DocTemplate:
 
         pdf.set_y(max(y + 5, 55))
 
-        # Custom header text
         if self.header:
-            pdf.set_font("Helvetica", "", 10)
+            _use_font(pdf, "", 10)
             pdf.multi_cell(0, 5, self.header)
             pdf.ln(3)
 
-        # Title
-        pdf.set_font("Helvetica", "B", 14)
+        _use_font(pdf, "B", 14)
         pdf.cell(0, 10, self.title, new_x="LMARGIN", new_y="NEXT", align="C")
         pdf.ln(5)
 
-        # Items table
         col_w = [10, 70, 20, 30, 30, 30]
         headers = ["#", "Product", "Qty", "Unit Price", "Total HT", "Total TTC"]
         if self.columns:
             headers = self.columns
 
-        pdf.set_font("Helvetica", "B", 9)
+        _use_font(pdf, "B", 9)
         pdf.set_fill_color(41, 101, 191)
         pdf.set_text_color(255, 255, 255)
         for i, h in enumerate(headers):
@@ -89,7 +124,7 @@ class DocTemplate:
         pdf.ln()
 
         pdf.set_text_color(0, 0, 0)
-        pdf.set_font("Helvetica", "", 9)
+        _use_font(pdf, "", 9)
         for idx, item in enumerate(items):
             row = [
                 str(idx + 1),
@@ -103,22 +138,19 @@ class DocTemplate:
                 pdf.cell(col_w[i], 7, val, border=1, align="C" if i != 1 else "L")
             pdf.ln()
 
-        # Totals
         pdf.ln(5)
-        pdf.set_font("Helvetica", "B", 10)
+        _use_font(pdf, "B", 10)
         pdf.cell(0, 7, f"Total HT: {total_ht:.2f}", new_x="LMARGIN", new_y="NEXT", align="R")
         pdf.cell(0, 7, f"Total TTC: {total_ttc:.2f}", new_x="LMARGIN", new_y="NEXT", align="R")
 
-        # Notes
         if notes:
             pdf.ln(5)
-            pdf.set_font("Helvetica", "B", 10)
+            _use_font(pdf, "B", 10)
             pdf.cell(0, 7, f"{self.notes_label} {notes}", new_x="LMARGIN", new_y="NEXT")
 
-        # Footer
         if self.footer:
             pdf.ln(10)
-            pdf.set_font("Helvetica", "I", 8)
+            _use_font(pdf, "I", 8)
             pdf.multi_cell(0, 5, self.footer)
 
         return pdf
@@ -148,34 +180,195 @@ def generate_dn_pdf(company, dn, items):
     return path
 
 
-def generate_invoice_pdf(company, invoice, items, payments=None, total_paid=0):
+_FIELD_RESOLVERS = {"name", "address", "phone", "email", "ice", "if_tax", "tp", "rc", "cnss", "website", "logo"}
+
+
+def _resolve_field(field, company, customer):
+    if field == "logo":
+        return ""
+    if company and field in _FIELD_RESOLVERS:
+        return getattr(company, field, "")
+    if customer and field in ("name", "address", "contact"):
+        if field == "contact":
+            return getattr(customer, "contact", getattr(customer, "email", ""))
+        return getattr(customer, field, "")
+    return ""
+
+
+def _render_section(pdf, section, company=None, customer=None, invoice=None, items=None, note1="", note2=""):
+    if not section.is_visible:
+        return pdf.get_y()
+
+    skey = section.section_key
+    _use_font(pdf, section.font_style, section.font_size)
+
+    x = pdf.l_margin if section.text_align != "right" else pdf.w - pdf.r_margin - 60
+    align = {"left": "L", "center": "C", "right": "R"}.get(section.text_align, "L")
+
+    if skey == "header_company_info":
+        fields = json.loads(section.fields_config)
+        pdf.ln(2)
+        for f in fields:
+            if f == "logo" and company and company.logo_path and os.path.exists(company.logo_path):
+                try:
+                    pdf.image(company.logo_path, x=x, y=pdf.get_y(), w=30)
+                    pdf.ln(12)
+                except Exception:
+                    pass
+            else:
+                val = _resolve_field(f, company, customer)
+                if val:
+                    pdf.set_x(x)
+                    pdf.cell(0, 5, str(val), new_x="LMARGIN", new_y="NEXT", align=align)
+
+    elif skey == "header_customer_info":
+        pdf.ln(4)
+        _use_font(pdf, "B", section.font_size)
+        pdf.cell(0, 5, "Client:", new_x="LMARGIN", new_y="NEXT")
+        _use_font(pdf, section.font_style, section.font_size)
+        fields = json.loads(section.fields_config)
+        for f in fields:
+            val = _resolve_field(f, company, customer)
+            if val:
+                pdf.set_x(x)
+                pdf.cell(0, 5, str(val), new_x="LMARGIN", new_y="NEXT", align=align)
+
+    elif skey == "body_title":
+        pdf.ln(6)
+        text = section.custom_text
+        if invoice:
+            text = text.replace("{number}", invoice.invoice_number).replace("{date}", invoice.date)
+        _use_font(pdf, section.font_style, section.font_size)
+        pdf.cell(0, 10, text, new_x="LMARGIN", new_y="NEXT", align=align)
+        pdf.ln(2)
+
+    elif skey == "body_attention":
+        pdf.ln(2)
+        cname = customer.name if customer else ""
+        _use_font(pdf, section.font_style, section.font_size)
+        pdf.cell(0, 5, f"Attention to: {cname}", new_x="LMARGIN", new_y="NEXT", align=align)
+
+    elif skey == "body_items_table":
+        pdf.ln(4)
+        col_headers = ["SKU", "Item", "Qty", "Unit Price", "Package", "Total"]
+        col_widths = [20, 60, 12, 25, 20, 25]
+        _use_font(pdf, "B", section.font_size)
+        pdf.set_fill_color(27, 42, 74)
+        pdf.set_text_color(255, 255, 255)
+        for i, h in enumerate(col_headers):
+            pdf.cell(col_widths[i], 7, h, border=1, align="C", fill=True)
+        pdf.ln()
+        pdf.set_text_color(0, 0, 0)
+        _use_font(pdf, section.font_style, section.font_size)
+        for idx, item in enumerate(items or []):
+            sku = getattr(item, "product_id", "")
+            row = [
+                str(sku) if sku else "",
+                item.product_name[:35],
+                str(item.quantity),
+                f"{item.unit_price:.2f}",
+                "",
+                f"{item.quantity * item.unit_price:.2f}",
+            ]
+            for i, val in enumerate(row):
+                pdf.cell(col_widths[i], 6, val, border=1, align="C" if i != 1 else "L")
+            pdf.ln()
+
+        total_ht = sum(it.quantity * it.unit_price for it in (items or []))
+        tva = total_ht * 0.20
+        total_ttc = total_ht + tva
+        pdf.ln(4)
+        _use_font(pdf, "", section.font_size)
+        pdf.cell(0, 6, f"Subtotal (HT): {total_ht:.2f}", new_x="LMARGIN", new_y="NEXT", align="R")
+        pdf.cell(0, 6, f"Tax (20%): {tva:.2f}", new_x="LMARGIN", new_y="NEXT", align="R")
+        _use_font(pdf, "B", section.font_size + 1)
+        pdf.cell(0, 7, f"Total TTC: {total_ttc:.2f}", new_x="LMARGIN", new_y="NEXT", align="R")
+
+    elif skey == "body_note1":
+        pdf.ln(3)
+        text = section.custom_text.replace("{note1}", note1)
+        _use_font(pdf, section.font_style, section.font_size)
+        pdf.multi_cell(0, 5, text, align=align)
+
+    elif skey == "body_note2":
+        pdf.ln(2)
+        text = section.custom_text.replace("{note2}", note2)
+        _use_font(pdf, section.font_style, section.font_size)
+        pdf.multi_cell(0, 5, text, align=align)
+
+    elif skey == "footer_left":
+        pdf.ln(4)
+        fields = json.loads(section.fields_config)
+        _use_font(pdf, section.font_style, section.font_size)
+        for f in fields:
+            val = _resolve_field(f, company, customer)
+            if val:
+                pdf.set_x(x)
+                pdf.cell(60, 4, str(val), new_x="LMARGIN", new_y="NEXT", align="L")
+
+    elif skey == "footer_right":
+        pdf.ln(4)
+        fields = json.loads(section.fields_config)
+        _use_font(pdf, section.font_style, section.font_size)
+        rx = pdf.w - pdf.r_margin - 60
+        for f in fields:
+            val = _resolve_field(f, company, customer)
+            if val:
+                pdf.set_x(rx)
+                pdf.cell(60, 4, str(val), new_x="LMARGIN", new_y="NEXT", align="R")
+
+    return pdf.get_y()
+
+
+def generate_invoice_pdf(company, invoice, items, payments=None, total_paid=0, db=None):
     ensure_pdf_dir()
-    tpl = DocTemplate(company)
-    tpl.title = f"FACTURE - {invoice.invoice_number}"
-    tpl.notes_label = "Notes:"
-    balance = invoice.total_ttc - total_paid
-    status_text = {
-        "completed": "PAYEE", "draft": "BROUILLON",
-        "sent": "ENVOYEE",
-        "partial": f"PAIEMENT PARTIEL - Restant: {balance:.2f}"
-    }.get(invoice.status, invoice.status)
-    tpl.header = (
-        f"Client ID: {invoice.customer_id}\n"
-        f"Date: {invoice.date}\n"
-        f"Due date: {invoice.due_date}\n"
-        f"Status: {status_text}"
-    )
-    pdf = tpl.build(items, invoice.total_ht, invoice.total_ttc, invoice.notes)
+    from app.database import DEFAULT_INVOICE_SECTIONS
+
+    pdf = FPDF()
+    pdf._comfortaa_loaded = _try_add_fonts(pdf)
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+
+    customer = None
+    if invoice.customer_id and db:
+        customer = db.get_customer(invoice.customer_id)
+
+    sections = None
+    if db:
+        sections = db.get_template_sections("invoice")
+
+    if not sections:
+        from app.database import TemplateSection
+        sections = []
+        for key, name, group, pos, ctype, fields, text, fsize, fstyle, align in DEFAULT_INVOICE_SECTIONS:
+            sections.append(TemplateSection(
+                doc_type="invoice", section_key=key, section_name=name,
+                parent_group=group, position=pos, is_visible=True,
+                content_type=ctype, fields_config=fields, custom_text=text,
+                font_size=fsize, font_style=fstyle, text_align=align,
+            ))
+
+    note1 = ""
+    note2 = ""
+    if invoice.notes:
+        parts = invoice.notes.split("\n---\n", 1)
+        note1 = parts[0]
+        if len(parts) > 1:
+            note2 = parts[1]
+
+    for sec in sections:
+        _render_section(pdf, sec, company, customer, invoice, items, note1, note2)
 
     if payments:
-        pdf.ln(10)
-        pdf.set_font("Helvetica", "B", 10)
+        pdf.ln(6)
+        _use_font(pdf, "B", 10)
         pdf.cell(0, 7, "Payment History:", new_x="LMARGIN", new_y="NEXT")
-        pdf.set_font("Helvetica", "", 9)
+        _use_font(pdf, "", 9)
         for p in payments:
             pdf.cell(0, 6, f"{p.date} - {p.amount:.2f} ({p.method})", new_x="LMARGIN", new_y="NEXT")
-        pdf.set_font("Helvetica", "B", 10)
+        _use_font(pdf, "B", 10)
         pdf.cell(0, 7, f"Total Paid: {total_paid:.2f}", new_x="LMARGIN", new_y="NEXT")
+        balance = invoice.total_ttc - total_paid
         pdf.cell(0, 7, f"Balance Due: {balance:.2f}", new_x="LMARGIN", new_y="NEXT")
 
     path = os.path.join(PDF_DIR, f"invoice_{invoice.invoice_number}.pdf")

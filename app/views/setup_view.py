@@ -1,5 +1,5 @@
 import flet as ft, shutil, os
-from app.database import Company, User
+from app.database import Company, User, TemplateSection
 from app.theme import PRIMARY, TEXT_SECONDARY
 
 
@@ -9,7 +9,7 @@ def setup_view(page, navigate):
         ("co_name", "Company Name *"), ("co_addr", "Address"), ("co_city", "City"),
         ("co_cp", "Postal Code"), ("co_phone", "Phone"), ("co_email", "Email"),
         ("co_web", "Website"), ("co_ice", "ICE"), ("co_tax", "IF (Tax ID)"),
-        ("co_rc", "RC"), ("co_cnss", "CNSS"),
+        ("co_tp", "TP"), ("co_rc", "RC"), ("co_cnss", "CNSS"),
     ]
     for key, label in labels:
         fields[key] = ft.TextField(label=label, width=400, border_radius=8,
@@ -25,6 +25,22 @@ def setup_view(page, navigate):
     adm_user = ft.TextField(label="Admin Username *", width=400, border_radius=8, focused_border_color=PRIMARY)
     adm_pass = ft.TextField(label="Admin Password *", password=True, can_reveal_password=True, width=400, border_radius=8, focused_border_color=PRIMARY)
     adm_name = ft.TextField(label="Admin Full Name *", width=400, border_radius=8, focused_border_color=PRIMARY)
+
+    section_toggles = {}
+    section_keys = [
+        ("header_company_info", "Company Info (Logo+Name+Address+Email+ICE)"),
+        ("header_customer_info", "Customer Info (Name+Address)"),
+        ("body_title", "Title: INVOICE + Number + Date"),
+        ("body_attention", "Attention To"),
+        ("body_items_table", "Items Table"),
+        ("body_note1", "Note 1"),
+        ("body_note2", "Note 2"),
+        ("footer_left", "Footer Left (Name+Address+Phone+Email)"),
+        ("footer_right", "Footer Right (IF+TP+RC)"),
+    ]
+    for key, label in section_keys:
+        section_toggles[key] = ft.Switch(label=label, value=True, active_color=PRIMARY)
+
     error_txt = ft.Text("", color=ft.Colors.RED, size=13)
 
     def do_save(e):
@@ -49,10 +65,17 @@ def setup_view(page, navigate):
                 phone=fields["co_phone"].value, email=fields["co_email"].value,
                 website=fields["co_web"].value, tax_id=fields["co_tax"].value,
                 ice=fields["co_ice"].value, rc=fields["co_rc"].value,
-                if_tax=fields["co_tax"].value, cnss=fields["co_cnss"].value,
+                if_tax=fields["co_tax"].value, tp=fields["co_tp"].value,
+                cnss=fields["co_cnss"].value,
                 logo_path=logo_dest, currency=fields["co_currency"].value
             ))
             page.db.insert_user(User(username=adm_user.value, password=adm_pass.value, full_name=adm_name.value))
+            page.db.create_default_invoice_template()
+            existing = {s.section_key: s for s in page.db.get_template_sections("invoice")}
+            for key, sw in section_toggles.items():
+                if key in existing:
+                    existing[key].is_visible = sw.value
+                    page.db.save_template_section(existing[key])
             navigate("/login")
         except Exception as ex:
             import traceback
@@ -81,10 +104,17 @@ def setup_view(page, navigate):
                     fields["co_phone"], fields["co_email"], fields["co_web"],
                     ft.Divider(height=12, color="transparent"),
                     ft.Text("Moroccan Tax Info", size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
-                    fields["co_ice"], fields["co_tax"], fields["co_rc"], fields["co_cnss"],
+                    fields["co_ice"], fields["co_tax"], fields["co_tp"], fields["co_rc"], fields["co_cnss"],
+                    ft.Divider(height=12, color="transparent"),
+                    fields["co_currency"],
                     ft.Divider(height=12, color="transparent"),
                     ft.Text("Admin Account", size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
                     adm_name, adm_user, adm_pass,
+                    ft.Divider(height=16, color="transparent"),
+                    ft.Text("Invoice Template Sections", size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
+                    ft.Text("Enable or disable invoice layout sections:", size=12, color=TEXT_SECONDARY),
+                    ft.Container(height=4),
+                    *[section_toggles[k] for k, _ in section_keys],
                     ft.Column([
                         logo_path,
                         error_txt,

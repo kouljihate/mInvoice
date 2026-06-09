@@ -213,18 +213,24 @@ def quote_form_view(page, navigate, quote_id=None):
     page.add(page_layout(page, navigate, title, back_route="/quotes",
         content=ft.Container(
             content=ft.Column([
-                cust_dd,
-                ft.Divider(height=8, color="transparent"),
-                ft.Row([
-                    ft.Text("Items", size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
-                    ft.TextButton("+ From Stock", on_click=add_from_stock, style=ft.ButtonStyle(color=PRIMARY)),
-                ], spacing=8),
-                items_controls,
-                ft.TextButton("+ Add Item", icon=ft.Icons.ADD, on_click=lambda e: (add_item_row(), page.update()),
-                              style=ft.ButtonStyle(color=PRIMARY)),
-                error_txt,
-                ft.Container(height=12),
-                primary_button("Save Quote", on_click=save),
+                ft.Container(
+                    content=ft.Column([
+                        cust_dd,
+                        ft.Divider(height=8, color="transparent"),
+                        ft.Row([
+                            ft.Text("Items", size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
+                            ft.TextButton("+ From Stock", on_click=add_from_stock, style=ft.ButtonStyle(color=PRIMARY)),
+                        ], spacing=8),
+                        items_controls,
+                        ft.TextButton("+ Add Item", icon=ft.Icons.ADD, on_click=lambda e: (add_item_row(), page.update()),
+                                      style=ft.ButtonStyle(color=PRIMARY)),
+                        error_txt,
+                        ft.Container(height=12),
+                        primary_button("Save Quote", on_click=save),
+                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                    bgcolor=ft.Colors.WHITE, padding=24, border_radius=16,
+                    shadow=ft.BoxShadow(blur_radius=8, color="rgba(0,0,0,0.04)", offset=ft.Offset(0, 2)),
+                ),
             ], scroll=ft.ScrollMode.AUTO, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             padding=16, expand=True,
         )))
