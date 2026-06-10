@@ -1,22 +1,22 @@
 {% extends 'base.html' %}
 {% block title %}Login{% endblock %}
 {% block content %}
-<div class=\"row justify-content-center mt-5\">
-  <div class=\"col-md-4\">
-    <div class=\"card shadow\">
-      <div class=\"card-body p-4 text-center\">
-        <i class=\"bi bi-receipt text-primary\" style=\"font-size:3rem;\"></i>
-        <h4 class=\"mt-2\">mInvoice</h4>
-        <p class=\"text-muted small\">Manage your business</p>
-        {% if error %}<div class=\"alert alert-danger py-2\">Invalid credentials</div>{% endif %}
-        <form method=\"post\">
-          <div class=\"mb-3\">
-            <input type=\"text\" name=\"username\" class=\"form-control\" placeholder=\"Username\" required>
+<div class="row justify-content-center mt-5">
+  <div class="col-md-4">
+    <div class="card shadow">
+      <div class="card-body p-4 text-center">
+        <i class="bi bi-receipt text-primary" style="font-size:3rem;"></i>
+        <h4 class="mt-2">mInvoice</h4>
+        <p class="text-muted small">Manage your business</p>
+        {% if error %}<div class="alert alert-danger py-2">Invalid credentials</div>{% endif %}
+        <form method="post">
+          <div class="mb-3">
+            <input type="text" name="username" class="form-control" placeholder="Username" required>
           </div>
-          <div class=\"mb-3\">
-            <input type=\"password\" name=\"password\" class=\"form-control\" placeholder=\"Password\" required>
+          <div class="mb-3">
+            <input type="password" name="password" class="form-control" placeholder="Password" required>
           </div>
-          <button type=\"submit\" class=\"btn btn-primary w-100\">Login</button>
+          <button type="submit" class="btn btn-primary w-100">Login</button>
         </form>
       </div>
     </div>

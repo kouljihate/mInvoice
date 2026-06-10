@@ -57,7 +57,7 @@ body {
 }
 
 @media (max-width: 576px) {
-  .container-fluid {
+  .container {
     padding-left: 12px;
     padding-right: 12px;
   }

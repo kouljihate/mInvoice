@@ -1,25 +1,25 @@
 {% extends 'base.html' %}
 {% block title %}{{ tr('customers') }}{% endblock %}
 {% block content %}
-<h5 class=\"mb-3\"><i class=\"bi bi-{{ 'pencil' if customer else 'plus' }}\"></i> {{ tr('edit_customer') if customer else tr('add_customer') }}</h5>
-<form method=\"post\">
-  <div class=\"mb-3\"><label class=\"form-label\">{{ tr('customer_name') }} *</label><input name=\"name\" class=\"form-control\" value=\"{{ customer.name if customer else '' }}\" required></div>
-  <div class=\"mb-3\"><label class=\"form-label\">{{ tr('customer_type') }}</label>
-    <select name=\"customer_type\" class=\"form-select\">
-      <option value=\"private\" {{ 'selected' if customer and customer.customer_type=='private' else '' }}>{{ tr('private') }}</option>
-      <option value=\"company\" {{ 'selected' if customer and customer.customer_type=='company' else '' }}>{{ tr('company') }}</option>
+<h5 class="mb-3"><i class="bi bi-{{ 'pencil' if customer else 'plus' }}"></i> {{ tr('edit_customer') if customer else tr('add_customer') }}</h5>
+<form method="post">
+  <div class="mb-3"><label class="form-label">{{ tr('customer_name') }} *</label><input name="name" class="form-control" value="{{ customer.name if customer else '' }}" required></div>
+  <div class="mb-3"><label class="form-label">{{ tr('customer_type') }}</label>
+    <select name="customer_type" class="form-select">
+      <option value="private" {{ 'selected' if customer and customer.customer_type=='private' else '' }}>{{ tr('private') }}</option>
+      <option value="company" {{ 'selected' if customer and customer.customer_type=='company' else '' }}>{{ tr('company') }}</option>
     </select>
   </div>
-  <div class=\"mb-3\"><label class=\"form-label\">{{ tr('address') }}</label><input name=\"address\" class=\"form-control\" value=\"{{ customer.address if customer else '' }}\"></div>
-  <div class=\"mb-3\"><label class=\"form-label\">{{ tr('phone') }}</label><input name=\"phone\" class=\"form-control\" value=\"{{ customer.phone if customer else '' }}\"></div>
-  <div class=\"mb-3\"><label class=\"form-label\">{{ tr('email') }}</label><input name=\"email\" type=\"email\" class=\"form-control\" value=\"{{ customer.email if customer else '' }}\"></div>
-  <div class=\"row g-3 mb-3\">
-    <div class=\"col-md-6\"><label class=\"form-label\">ICE / Tax ID</label><input name=\"tax_id\" class=\"form-control\" value=\"{{ customer.tax_id if customer else '' }}\"></div>
-    <div class=\"col-md-6\"><label class=\"form-label\">RC</label><input name=\"rc\" class=\"form-control\" value=\"{{ customer.rc if customer else '' }}\"></div>
-    <div class=\"col-md-6\"><label class=\"form-label\">IF</label><input name=\"if_tax\" class=\"form-control\" value=\"{{ customer.if_tax if customer else '' }}\"></div>
-    <div class=\"col-md-6\"><label class=\"form-label\">CNSS</label><input name=\"cnss\" class=\"form-control\" value=\"{{ customer.cnss if customer else '' }}\"></div>
+  <div class="mb-3"><label class="form-label">{{ tr('address') }}</label><input name="address" class="form-control" value="{{ customer.address if customer else '' }}"></div>
+  <div class="mb-3"><label class="form-label">{{ tr('phone') }}</label><input name="phone" class="form-control" value="{{ customer.phone if customer else '' }}"></div>
+  <div class="mb-3"><label class="form-label">{{ tr('email') }}</label><input name="email" type="email" class="form-control" value="{{ customer.email if customer else '' }}"></div>
+  <div class="row g-3 mb-3">
+    <div class="col-md-6"><label class="form-label">ICE / Tax ID</label><input name="tax_id" class="form-control" value="{{ customer.tax_id if customer else '' }}"></div>
+    <div class="col-md-6"><label class="form-label">RC</label><input name="rc" class="form-control" value="{{ customer.rc if customer else '' }}"></div>
+    <div class="col-md-6"><label class="form-label">IF</label><input name="if_tax" class="form-control" value="{{ customer.if_tax if customer else '' }}"></div>
+    <div class="col-md-6"><label class="form-label">CNSS</label><input name="cnss" class="form-control" value="{{ customer.cnss if customer else '' }}"></div>
   </div>
-  <button type=\"submit\" class=\"btn btn-primary\"><i class=\"bi bi-check\"></i> {{ tr('save') }}</button>
-  <a href=\"{{ url_for('customers.list_customers') }}\" class=\"btn btn-outline-secondary\">{{ tr('cancel') }}</a>
+  <button type="submit" class="btn btn-primary"><i class="bi bi-check"></i> {{ tr('save') }}</button>
+  <a href="{{ url_for('customers.list_customers') }}" class="btn btn-outline-secondary">{{ tr('cancel') }}</a>
 </form>
 {% endblock %}

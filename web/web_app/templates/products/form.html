@@ -2,19 +2,19 @@
 {% block title %}{{ tr('products') }}{% endblock %}
 {% set currency = (company.currency + ' ') if company else 'MAD ' %}
 {% block content %}
-<h5 class=\"mb-3\"><i class=\"bi bi-{{ 'pencil' if product else 'plus' }}\"></i> {{ tr('edit_product') if product else tr('add_product') }}</h5>
-<form method=\"post\">
-  <div class=\"mb-3\"><label class=\"form-label\">{{ tr('product_name') }} *</label><input name=\"name\" class=\"form-control\" value=\"{{ product.name if product else '' }}\" required></div>
-  <div class=\"mb-3\"><label class=\"form-label\">{{ tr('description') }}</label><textarea name=\"description\" class=\"form-control\" rows=\"2\">{{ product.description if product else '' }}</textarea></div>
-  <div class=\"row g-3 mb-3\">
-    <div class=\"col-md-6\"><label class=\"form-label\">{{ tr('reference') }}</label><input name=\"reference\" class=\"form-control\" value=\"{{ product.reference if product else '' }}\"></div>
-    <div class=\"col-md-6\"><label class=\"form-label\">{{ tr('unit_price') }} *</label><input name=\"unit_price\" type=\"number\" step=\"0.01\" class=\"form-control\" value=\"{{ product.unit_price if product else '0' }}\" required></div>
-    <div class=\"col-md-4\"><label class=\"form-label\">{{ tr('quantity') }}</label><input name=\"quantity\" type=\"number\" class=\"form-control\" value=\"{{ product.quantity if product else '0' }}\"></div>
-    <div class=\"col-md-4\"><label class=\"form-label\">{{ tr('alert_stock') }}</label><input name=\"alert_stock\" type=\"number\" class=\"form-control\" value=\"{{ product.alert_stock if product else '0' }}\"></div>
-    <div class=\"col-md-4\"><label class=\"form-label\">{{ tr('unit') }}</label><input name=\"unit\" class=\"form-control\" value=\"{{ product.unit if product else '' }}\" placeholder=\"kg, pcs...\"></div>
+<h5 class="mb-3"><i class="bi bi-{{ 'pencil' if product else 'plus' }}"></i> {{ tr('edit_product') if product else tr('add_product') }}</h5>
+<form method="post">
+  <div class="mb-3"><label class="form-label">{{ tr('product_name') }} *</label><input name="name" class="form-control" value="{{ product.name if product else '' }}" required></div>
+  <div class="mb-3"><label class="form-label">{{ tr('description') }}</label><textarea name="description" class="form-control" rows="2">{{ product.description if product else '' }}</textarea></div>
+  <div class="row g-3 mb-3">
+    <div class="col-md-6"><label class="form-label">{{ tr('reference') }}</label><input name="reference" class="form-control" value="{{ product.reference if product else '' }}"></div>
+    <div class="col-md-6"><label class="form-label">{{ tr('unit_price') }} *</label><input name="unit_price" type="number" step="0.01" class="form-control" value="{{ product.unit_price if product else '0' }}" required></div>
+    <div class="col-md-4"><label class="form-label">{{ tr('quantity') }}</label><input name="quantity" type="number" class="form-control" value="{{ product.quantity if product else '0' }}"></div>
+    <div class="col-md-4"><label class="form-label">{{ tr('alert_stock') }}</label><input name="alert_stock" type="number" class="form-control" value="{{ product.alert_stock if product else '0' }}"></div>
+    <div class="col-md-4"><label class="form-label">{{ tr('unit') }}</label><input name="unit" class="form-control" value="{{ product.unit if product else '' }}" placeholder="kg, pcs..."></div>
   </div>
-  <div class=\"mb-3\"><label class=\"form-label\">{{ tr('package_type') }}</label><input name=\"package_type\" class=\"form-control\" value=\"{{ product.package_type if product else '' }}\" placeholder=\"e.g. Box 12x1kg\"></div>
-  <button type=\"submit\" class=\"btn btn-primary\"><i class=\"bi bi-check\"></i> {{ tr('save') }}</button>
-  <a href=\"{{ url_for('products.list_products') }}\" class=\"btn btn-outline-secondary\">{{ tr('cancel') }}</a>
+  <div class="mb-3"><label class="form-label">{{ tr('package_type') }}</label><input name="package_type" class="form-control" value="{{ product.package_type if product else '' }}" placeholder="e.g. Box 12x1kg"></div>
+  <button type="submit" class="btn btn-primary"><i class="bi bi-check"></i> {{ tr('save') }}</button>
+  <a href="{{ url_for('products.list_products') }}" class="btn btn-outline-secondary">{{ tr('cancel') }}</a>
 </form>
 {% endblock %}

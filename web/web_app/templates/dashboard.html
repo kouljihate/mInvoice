@@ -3,133 +3,133 @@
 {% block content %}
 {% set currency = (company.currency + ' ') if company else 'MAD ' %}
 
-<div class=\"row mb-3\">
-  <div class=\"col-12\">
-    <div class=\"p-3 rounded-4 text-white\" style=\"background:#1B2A4A;\">
-      <div class=\"d-flex align-items-center gap-2 mb-2\">
-        <div class=\"p-2 rounded-3\" style=\"background:rgba(255,255,255,0.15)\"><i class=\"bi bi-receipt\"></i></div>
-        <h5 class=\"mb-0\">mInvoice</h5>
+<div class="row mb-3">
+  <div class="col-12">
+    <div class="p-3 rounded-4 text-white" style="background:#1B2A4A;">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <div class="p-2 rounded-3" style="background:rgba(255,255,255,0.15)"><i class="bi bi-receipt"></i></div>
+        <h5 class="mb-0">mInvoice</h5>
       </div>
-      <div class=\"row mt-2\">
-        <div class=\"col-6\">
-          <small class=\"text-white-50\">{{ tr('revenue') }}</small>
-          <h4 class=\"mb-0 fw-bold\">{{ currency }}{{ '%.0f'|format(d.sales_month) }}</h4>
+      <div class="row mt-2">
+        <div class="col-6">
+          <small class="text-white-50">{{ tr('revenue') }}</small>
+          <h4 class="mb-0 fw-bold">{{ currency }}{{ '%.0f'|format(d.sales_month) }}</h4>
         </div>
-        <div class=\"col-6 text-end\">
-          <small class=\"text-white-50\">{{ tr('outstanding') }}</small>
-          <h4 class=\"mb-0 fw-bold\" style=\"color:#FBBF24;\">{{ currency }}{{ '%.0f'|format(d.outstanding) }}</h4>
+        <div class="col-6 text-end">
+          <small class="text-white-50">{{ tr('outstanding') }}</small>
+          <h4 class="mb-0 fw-bold" style="color:#FBBF24;">{{ currency }}{{ '%.0f'|format(d.outstanding) }}</h4>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<ul class=\"nav nav-tabs nav-fill mb-3\" id=\"dashTabs\" role=\"tablist\">
-  <li class=\"nav-item\" role=\"presentation\">
-    <button class=\"nav-link active\" id=\"main-tab\" data-bs-toggle=\"tab\" data-bs-target=\"#main\" type=\"button\" role=\"tab\">Main</button>
+<ul class="nav nav-tabs nav-fill mb-3" id="dashTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="main-tab" data-bs-toggle="tab" data-bs-target="#main" type="button" role="tab">Main</button>
   </li>
-  <li class=\"nav-item\" role=\"presentation\">
-    <button class=\"nav-link\" id=\"kpi-tab\" data-bs-toggle=\"tab\" data-bs-target=\"#kpi\" type=\"button\" role=\"tab\">KPIs</button>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="kpi-tab" data-bs-toggle="tab" data-bs-target="#kpi" type="button" role="tab">KPIs</button>
   </li>
-  <li class=\"nav-item\" role=\"presentation\">
-    <button class=\"nav-link\" id=\"signals-tab\" data-bs-toggle=\"tab\" data-bs-target=\"#signals\" type=\"button\" role=\"tab\">Signals</button>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="signals-tab" data-bs-toggle="tab" data-bs-target="#signals" type="button" role="tab">Signals</button>
   </li>
-  <li class=\"nav-item\" role=\"presentation\">
-    <button class=\"nav-link\" id=\"products-tab\" data-bs-toggle=\"tab\" data-bs-target=\"#products\" type=\"button\" role=\"tab\">Products</button>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="products-tab" data-bs-toggle="tab" data-bs-target="#products" type="button" role="tab">Products</button>
   </li>
 </ul>
 
-<div class=\"tab-content\" id=\"dashTabsContent\">
+<div class="tab-content" id="dashTabsContent">
   {# ======= MAIN TAB ======= #}
-  <div class=\"tab-pane fade show active\" id=\"main\" role=\"tabpanel\">
-    <div class=\"row g-3 mb-3\">
-      <div class=\"col-6\"><a href=\"{{ url_for('customers.list_customers') }}\" class=\"text-decoration-none\">
-        <div class=\"card border-0 shadow-sm text-center p-3\">
-          <div class=\"p-2 rounded-3 d-inline-block mx-auto\" style=\"background:#05966920;\"><i class=\"bi bi-people fs-5\" style=\"color:#059669;\"></i></div>
-          <small class=\"mt-2 fw-semibold\">{{ tr('customers') }}</small>
+  <div class="tab-pane fade show active" id="main" role="tabpanel">
+    <div class="row g-3 mb-3">
+      <div class="col-6"><a href="{{ url_for('customers.list_customers') }}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-center p-3">
+          <div class="p-2 rounded-3 d-inline-block mx-auto" style="background:#05966920;"><i class="bi bi-people fs-5" style="color:#059669;"></i></div>
+          <small class="mt-2 fw-semibold">{{ tr('customers') }}</small>
         </div></a>
       </div>
-      <div class=\"col-6\"><a href=\"{{ url_for('products.list_products') }}\" class=\"text-decoration-none\">
-        <div class=\"card border-0 shadow-sm text-center p-3\">
-          <div class=\"p-2 rounded-3 d-inline-block mx-auto\" style=\"background:#0891B220;\"><i class=\"bi bi-box fs-5\" style=\"color:#0891B2;\"></i></div>
-          <small class=\"mt-2 fw-semibold\">{{ tr('products') }}</small>
+      <div class="col-6"><a href="{{ url_for('products.list_products') }}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-center p-3">
+          <div class="p-2 rounded-3 d-inline-block mx-auto" style="background:#0891B220;"><i class="bi bi-box fs-5" style="color:#0891B2;"></i></div>
+          <small class="mt-2 fw-semibold">{{ tr('products') }}</small>
         </div></a>
       </div>
     </div>
-    <div class=\"row g-3\">
-      <div class=\"col-6\"><a href=\"{{ url_for('quotes.list_quotes') }}\" class=\"text-decoration-none\">
-        <div class=\"card border-0 shadow-sm text-center p-3\">
-          <div class=\"p-2 rounded-3 d-inline-block mx-auto\" style=\"background:#D9770620;\"><i class=\"bi bi-file-text fs-5\" style=\"color:#D97706;\"></i></div>
-          <small class=\"mt-2 fw-semibold\">{{ tr('quotes') }}</small>
+    <div class="row g-3">
+      <div class="col-6"><a href="{{ url_for('quotes.list_quotes') }}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-center p-3">
+          <div class="p-2 rounded-3 d-inline-block mx-auto" style="background:#D9770620;"><i class="bi bi-file-text fs-5" style="color:#D97706;"></i></div>
+          <small class="mt-2 fw-semibold">{{ tr('quotes') }}</small>
         </div></a>
       </div>
-      <div class=\"col-6\"><a href=\"{{ url_for('invoices.list_invoices') }}\" class=\"text-decoration-none\">
-        <div class=\"card border-0 shadow-sm text-center p-3\">
-          <div class=\"p-2 rounded-3 d-inline-block mx-auto\" style=\"background:#7C3AED20;\"><i class=\"bi bi-receipt fs-5\" style=\"color:#7C3AED;\"></i></div>
-          <small class=\"mt-2 fw-semibold\">{{ tr('invoices') }}</small>
+      <div class="col-6"><a href="{{ url_for('invoices.list_invoices') }}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-center p-3">
+          <div class="p-2 rounded-3 d-inline-block mx-auto" style="background:#7C3AED20;"><i class="bi bi-receipt fs-5" style="color:#7C3AED;"></i></div>
+          <small class="mt-2 fw-semibold">{{ tr('invoices') }}</small>
         </div></a>
       </div>
-      <div class=\"col-6\"><a href=\"{{ url_for('delivery_notes.list_delivery_notes') }}\" class=\"text-decoration-none\">
-        <div class=\"card border-0 shadow-sm text-center p-3\">
-          <div class=\"p-2 rounded-3 d-inline-block mx-auto\" style=\"background:#2563EB20;\"><i class=\"bi bi-truck fs-5\" style=\"color:#2563EB;\"></i></div>
-          <small class=\"mt-2 fw-semibold\">Bons Livr.</small>
+      <div class="col-6"><a href="{{ url_for('delivery_notes.list_delivery_notes') }}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-center p-3">
+          <div class="p-2 rounded-3 d-inline-block mx-auto" style="background:#2563EB20;"><i class="bi bi-truck fs-5" style="color:#2563EB;"></i></div>
+          <small class="mt-2 fw-semibold">Bons Livr.</small>
         </div></a>
       </div>
-      <div class=\"col-6\"><a href=\"{{ url_for('payments.list_payments') }}\" class=\"text-decoration-none\">
-        <div class=\"card border-0 shadow-sm text-center p-3\">
-          <div class=\"p-2 rounded-3 d-inline-block mx-auto\" style=\"background:#05966920;\"><i class=\"bi bi-credit-card fs-5\" style=\"color:#059669;\"></i></div>
-          <small class=\"mt-2 fw-semibold\">{{ tr('payments') }}</small>
+      <div class="col-6"><a href="{{ url_for('payments.list_payments') }}" class="text-decoration-none">
+        <div class="card border-0 shadow-sm text-center p-3">
+          <div class="p-2 rounded-3 d-inline-block mx-auto" style="background:#05966920;"><i class="bi bi-credit-card fs-5" style="color:#059669;"></i></div>
+          <small class="mt-2 fw-semibold">{{ tr('payments') }}</small>
         </div></a>
       </div>
     </div>
   </div>
 
   {# ======= KPI TAB ======= #}
-  <div class=\"tab-pane fade\" id=\"kpi\" role=\"tabpanel\">
-    <div class=\"row g-2 mb-3\">
+  <div class="tab-pane fade" id="kpi" role="tabpanel">
+    <div class="row g-2 mb-3">
       {% for k in [5,3,4] %}
-      <div class=\"col-4\">
-        <div class=\"card border-0 shadow-sm text-center p-3 h-100\">
+      <div class="col-4">
+        <div class="card border-0 shadow-sm text-center p-3 h-100">
           {% set icons = ['bi-box','bi-hourglass','bi-exclamation-triangle'] %}
           {% set colors = ['#0891B2','#D97706','#DC2626'] %}
-          <div class=\"p-2 rounded-3 d-inline-block mx-auto\" style=\"background:{{ colors[loop.index0] }}20;\">
-            <i class=\"bi {{ icons[loop.index0] }} fs-5\" style=\"color:{{ colors[loop.index0] }};\"></i>
+          <div class="p-2 rounded-3 d-inline-block mx-auto" style="background:{{ colors[loop.index0] }}20;">
+            <i class="bi {{ icons[loop.index0] }} fs-5" style="color:{{ colors[loop.index0] }};"></i>
           </div>
-          <small class=\"text-muted mt-2\">{{ [tr('stock_value'), tr('outstanding'), tr('overdue')][loop.index0] }}</small>
-          <strong class=\"fs-6\">{{ currency }}{{ '%.0f'|format([d.stock_value, d.outstanding, d.overdue_amount][loop.index0]) }}</strong>
+          <small class="text-muted mt-2">{{ [tr('stock_value'), tr('outstanding'), tr('overdue')][loop.index0] }}</small>
+          <strong class="fs-6">{{ currency }}{{ '%.0f'|format([d.stock_value, d.outstanding, d.overdue_amount][loop.index0]) }}</strong>
         </div>
       </div>
       {% endfor %}
     </div>
-    <div class=\"row g-2 mb-3\">
+    <div class="row g-2 mb-3">
       {% for k in [1,2,0] %}
-      <div class=\"col-4\">
-        <div class=\"card border-0 shadow-sm text-center p-3 h-100\">
+      <div class="col-4">
+        <div class="card border-0 shadow-sm text-center p-3 h-100">
           {% set icons = ['bi-receipt','bi-check-circle','bi-trending-up'] %}
           {% set colors = ['#7C3AED','#059669','#2563EB'] %}
           {% set labels = [tr('invoiced_month'), tr('paid_month'), tr('sales_month')] %}
           {% set vals = [d.invoiced_month, d.paid_month, d.sales_month] %}
-          <div class=\"p-2 rounded-3 d-inline-block mx-auto\" style=\"background:{{ colors[loop.index0] }}20;\">
-            <i class=\"bi {{ icons[loop.index0] }} fs-5\" style=\"color:{{ colors[loop.index0] }};\"></i>
+          <div class="p-2 rounded-3 d-inline-block mx-auto" style="background:{{ colors[loop.index0] }}20;">
+            <i class="bi {{ icons[loop.index0] }} fs-5" style="color:{{ colors[loop.index0] }};"></i>
           </div>
-          <small class=\"text-muted mt-2\">{{ labels[loop.index0] }}</small>
-          <strong class=\"fs-6\">{{ currency }}{{ '%.0f'|format(vals[loop.index0]) }}</strong>
+          <small class="text-muted mt-2">{{ labels[loop.index0] }}</small>
+          <strong class="fs-6">{{ currency }}{{ '%.0f'|format(vals[loop.index0]) }}</strong>
         </div>
       </div>
       {% endfor %}
     </div>
-    <div class=\"card border-0 shadow-sm p-3\">
-      <h6 class=\"mb-3 fw-bold\"><i class=\"bi bi-receipt me-2\" style=\"color:#7C3AED;\"></i> {{ tr('invoices_status') }}</h6>
+    <div class="card border-0 shadow-sm p-3">
+      <h6 class="mb-3 fw-bold"><i class="bi bi-receipt me-2" style="color:#7C3AED;"></i> {{ tr('invoices_status') }}</h6>
       {% set statuses = [('Draft', d.draft_inv, '#94A3B8'), ('Sent', d.sent_inv, '#3B82F6'), ('Partial', d.partial_inv, '#F57C00'), ('Paid', d.paid_inv, '#2E7D32')] %}
       {% set inv_total = [d.total_invoices, 1]|max %}
       {% for label, val, clr in statuses %}
       {% set pct = [val / inv_total * 100, 100]|min %}
-      <div class=\"mb-2\">
-        <div class=\"d-flex justify-content-between small\">
+      <div class="mb-2">
+        <div class="d-flex justify-content-between small">
           <span>{{ label }}</span><strong>{{ val }}</strong>
         </div>
-        <div class=\"progress\" style=\"height:5px;\">
-          <div class=\"progress-bar\" style=\"width:{{ pct }}%;background:{{ clr }};\" role=\"progressbar\"></div>
+        <div class="progress" style="height:5px;">
+          <div class="progress-bar" style="width:{{ pct }}%;background:{{ clr }};" role="progressbar"></div>
         </div>
       </div>
       {% endfor %}
@@ -137,130 +137,130 @@
   </div>
 
   {# ======= SIGNALS TAB ======= #}
-  <div class=\"tab-pane fade\" id=\"signals\" role=\"tabpanel\">
-    <div class=\"row g-3 mb-3\">
-      <div class=\"col-6\">
-        <div class=\"card border-0 shadow-sm p-3 h-100\">
-          <div class=\"d-flex align-items-center gap-2 mb-2\">
-            <div class=\"p-2 rounded-3\" style=\"background:#0891B2;\"><i class=\"bi bi-box text-white\"></i></div>
-            <strong class=\"small\">{{ tr('stock_signals') }}</strong>
+  <div class="tab-pane fade" id="signals" role="tabpanel">
+    <div class="row g-3 mb-3">
+      <div class="col-6">
+        <div class="card border-0 shadow-sm p-3 h-100">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="p-2 rounded-3" style="background:#0891B2;"><i class="bi bi-box text-white"></i></div>
+            <strong class="small">{{ tr('stock_signals') }}</strong>
           </div>
-          <div class=\"d-flex gap-2 mb-2\">
-            <span class=\"badge\" style=\"background:#F57C0020;color:#F57C00;border:1px solid #F57C0040;\"><strong>{{ d.low_stock }}</strong> {{ tr('low_stock_items') }}</span>
-            <span class=\"badge\" style=\"background:#D32F2F20;color:#D32F2F;border:1px solid #D32F2F40;\"><strong>{{ d.out_of_stock }}</strong> {{ tr('out_of_stock') }}</span>
+          <div class="d-flex gap-2 mb-2">
+            <span class="badge" style="background:#F57C0020;color:#F57C00;border:1px solid #F57C0040;"><strong>{{ d.low_stock }}</strong> {{ tr('low_stock_items') }}</span>
+            <span class="badge" style="background:#D32F2F20;color:#D32F2F;border:1px solid #D32F2F40;"><strong>{{ d.out_of_stock }}</strong> {{ tr('out_of_stock') }}</span>
           </div>
-          <span class=\"badge\" style=\"background:#F59E0B20;color:#F59E0B;border:1px solid #F59E0B40;\"><strong>{{ d.below_reorder }}</strong> {{ tr('below_reorder') }}</span>
-          <hr class=\"my-2\">
-          <small class=\"text-muted\">{{ tr('top_selling') }}</small>
+          <span class="badge" style="background:#F59E0B20;color:#F59E0B;border:1px solid #F59E0B40;"><strong>{{ d.below_reorder }}</strong> {{ tr('below_reorder') }}</span>
+          <hr class="my-2">
+          <small class="text-muted">{{ tr('top_selling') }}</small>
           {% for p in d.fast_moving[:3] %}
-          <div class=\"d-flex align-items-center gap-2 mt-1 small\">
-            <span class=\"badge rounded-pill bg-secondary\">{{ loop.index }}</span>
-            <span class=\"flex-grow-1\">{{ p.product_name[:25] }}</span>
+          <div class="d-flex align-items-center gap-2 mt-1 small">
+            <span class="badge rounded-pill bg-secondary">{{ loop.index }}</span>
+            <span class="flex-grow-1">{{ p.product_name[:25] }}</span>
             <strong>x{{ p.total_sold }}</strong>
           </div>
           {% endfor %}
         </div>
       </div>
-      <div class=\"col-6\">
-        <div class=\"card border-0 shadow-sm p-3 h-100\">
-          <div class=\"d-flex align-items-center gap-2 mb-2\">
-            <div class=\"p-2 rounded-3\" style=\"background:#059669;\"><i class=\"bi bi-people text-white\"></i></div>
-            <strong class=\"small\">{{ tr('customer_signals') }}</strong>
+      <div class="col-6">
+        <div class="card border-0 shadow-sm p-3 h-100">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="p-2 rounded-3" style="background:#059669;"><i class="bi bi-people text-white"></i></div>
+            <strong class="small">{{ tr('customer_signals') }}</strong>
           </div>
-          <div class=\"d-flex gap-2 mb-2\">
-            <span class=\"badge\" style=\"background:#2E7D3220;color:#2E7D32;border:1px solid #2E7D3240;\"><strong>{{ d.active_customers }}</strong> {{ tr('active_customers') }}</span>
-            <span class=\"badge\" style=\"background:#D32F2F20;color:#D32F2F;border:1px solid #D32F2F40;\"><strong>{{ d.overdue_customers }}</strong> {{ tr('overdue_customers') }}</span>
+          <div class="d-flex gap-2 mb-2">
+            <span class="badge" style="background:#2E7D3220;color:#2E7D32;border:1px solid #2E7D3240;"><strong>{{ d.active_customers }}</strong> {{ tr('active_customers') }}</span>
+            <span class="badge" style="background:#D32F2F20;color:#D32F2F;border:1px solid #D32F2F40;"><strong>{{ d.overdue_customers }}</strong> {{ tr('overdue_customers') }}</span>
           </div>
-          <span class=\"badge\" style=\"background:#3B82F620;color:#3B82F6;border:1px solid #3B82F640;\"><strong>{{ d.total_customers }}</strong> {{ tr('total_customers') }}</span>
-          <hr class=\"my-2\">
-          <small class=\"text-muted\">{{ tr('top_customers') }}</small>
+          <span class="badge" style="background:#3B82F620;color:#3B82F6;border:1px solid #3B82F640;"><strong>{{ d.total_customers }}</strong> {{ tr('total_customers') }}</span>
+          <hr class="my-2">
+          <small class="text-muted">{{ tr('top_customers') }}</small>
           {% for c in d.top_customers[:3] %}
-          <div class=\"d-flex align-items-center gap-2 mt-1 small\">
-            <span class=\"badge rounded-pill border border-secondary text-secondary\">{{ loop.index }}</span>
-            <span class=\"flex-grow-1\">{{ c.name[:20] }}</span>
+          <div class="d-flex align-items-center gap-2 mt-1 small">
+            <span class="badge rounded-pill border border-secondary text-secondary">{{ loop.index }}</span>
+            <span class="flex-grow-1">{{ c.name[:20] }}</span>
             <strong>{{ currency }}{{ '%.0f'|format(c.revenue) }}</strong>
           </div>
           {% endfor %}
         </div>
       </div>
     </div>
-    <div class=\"row g-3\">
-      <div class=\"col-6\">
-        <div class=\"card border-0 shadow-sm p-3 h-100\">
-          <div class=\"d-flex align-items-center gap-2 mb-2\">
-            <div class=\"p-2 rounded-3\" style=\"background:#D97706;\"><i class=\"bi bi-file-text text-white\"></i></div>
-            <strong class=\"small\">{{ tr('quote_signals') }}</strong>
+    <div class="row g-3">
+      <div class="col-6">
+        <div class="card border-0 shadow-sm p-3 h-100">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="p-2 rounded-3" style="background:#D97706;"><i class="bi bi-file-text text-white"></i></div>
+            <strong class="small">{{ tr('quote_signals') }}</strong>
           </div>
-          <div class=\"d-flex gap-2 mb-2\">
-            <span class=\"badge\" style=\"background:#94A3B820;color:#94A3B8;border:1px solid #94A3B840;\"><strong>{{ d.draft_quotes }}</strong> {{ tr('draft_quotes') }}</span>
-            <span class=\"badge\" style=\"background:#2E7D3220;color:#2E7D32;border:1px solid #2E7D3240;\"><strong>{{ d.validated_quotes }}</strong> {{ tr('validated_quotes') }}</span>
+          <div class="d-flex gap-2 mb-2">
+            <span class="badge" style="background:#94A3B820;color:#94A3B8;border:1px solid #94A3B840;"><strong>{{ d.draft_quotes }}</strong> {{ tr('draft_quotes') }}</span>
+            <span class="badge" style="background:#2E7D3220;color:#2E7D32;border:1px solid #2E7D3240;"><strong>{{ d.validated_quotes }}</strong> {{ tr('validated_quotes') }}</span>
           </div>
-          <div class=\"d-flex gap-2 mb-2\">
-            <span class=\"badge\" style=\"background:#3B82F620;color:#3B82F6;border:1px solid #3B82F640;\"><strong>{{ d.sent_quotes }}</strong> {{ tr('sent_quotes') }}</span>
-            <span class=\"badge\" style=\"background:#7C3AED20;color:#7C3AED;border:1px solid #7C3AED40;\"><strong>{{ d.confirmed_quotes }}</strong> {{ tr('confirmed_quotes') }}</span>
+          <div class="d-flex gap-2 mb-2">
+            <span class="badge" style="background:#3B82F620;color:#3B82F6;border:1px solid #3B82F640;"><strong>{{ d.sent_quotes }}</strong> {{ tr('sent_quotes') }}</span>
+            <span class="badge" style="background:#7C3AED20;color:#7C3AED;border:1px solid #7C3AED40;"><strong>{{ d.confirmed_quotes }}</strong> {{ tr('confirmed_quotes') }}</span>
           </div>
-          <div class=\"d-flex justify-content-between mt-1 small\">
-            <span class=\"text-muted\">{{ tr('quotes_month') }}: <strong class=\"text-dark\">{{ d.quotes_month }}</strong></span>
-            <span class=\"text-muted\">{{ tr('amount_month') }}: <strong style=\"color:#D97706;\">{{ currency }}{{ '%.0f'|format(d.quotes_amount_month) }}</strong></span>
+          <div class="d-flex justify-content-between mt-1 small">
+            <span class="text-muted">{{ tr('quotes_month') }}: <strong class="text-dark">{{ d.quotes_month }}</strong></span>
+            <span class="text-muted">{{ tr('amount_month') }}: <strong style="color:#D97706;">{{ currency }}{{ '%.0f'|format(d.quotes_amount_month) }}</strong></span>
           </div>
         </div>
       </div>
-      <div class=\"col-6\">
-        <div class=\"card border-0 shadow-sm p-3 h-100\">
-          <div class=\"d-flex align-items-center gap-2 mb-2\">
-            <div class=\"p-2 rounded-3\" style=\"background:#7C3AED;\"><i class=\"bi bi-receipt text-white\"></i></div>
-            <strong class=\"small\">{{ tr('invoice_signals') }}</strong>
+      <div class="col-6">
+        <div class="card border-0 shadow-sm p-3 h-100">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="p-2 rounded-3" style="background:#7C3AED;"><i class="bi bi-receipt text-white"></i></div>
+            <strong class="small">{{ tr('invoice_signals') }}</strong>
           </div>
-          <div class=\"d-flex gap-2 mb-2\">
-            <span class=\"badge\" style=\"background:#94A3B820;color:#94A3B8;border:1px solid #94A3B840;\"><strong>{{ d.draft_inv }}</strong> {{ tr('draft_invoices') }}</span>
-            <span class=\"badge\" style=\"background:#3B82F620;color:#3B82F6;border:1px solid #3B82F640;\"><strong>{{ d.sent_inv }}</strong> {{ tr('sent_invoices') }}</span>
+          <div class="d-flex gap-2 mb-2">
+            <span class="badge" style="background:#94A3B820;color:#94A3B8;border:1px solid #94A3B840;"><strong>{{ d.draft_inv }}</strong> {{ tr('draft_invoices') }}</span>
+            <span class="badge" style="background:#3B82F620;color:#3B82F6;border:1px solid #3B82F640;"><strong>{{ d.sent_inv }}</strong> {{ tr('sent_invoices') }}</span>
           </div>
-          <div class=\"d-flex gap-2 mb-2\">
-            <span class=\"badge\" style=\"background:#F57C0020;color:#F57C00;border:1px solid #F57C0040;\"><strong>{{ d.partial_inv }}</strong> {{ tr('partial_invoices') }}</span>
-            <span class=\"badge\" style=\"background:#2E7D3220;color:#2E7D32;border:1px solid #2E7D3240;\"><strong>{{ d.paid_inv }}</strong> {{ tr('paid_invoices') }}</span>
+          <div class="d-flex gap-2 mb-2">
+            <span class="badge" style="background:#F57C0020;color:#F57C00;border:1px solid #F57C0040;"><strong>{{ d.partial_inv }}</strong> {{ tr('partial_invoices') }}</span>
+            <span class="badge" style="background:#2E7D3220;color:#2E7D32;border:1px solid #2E7D3240;"><strong>{{ d.paid_inv }}</strong> {{ tr('paid_invoices') }}</span>
           </div>
-          <span class=\"badge w-100\" style=\"background:#D32F2F20;color:#D32F2F;border:1px solid #D32F2F40;\"><strong>{{ d.overdue_count }}</strong> {{ tr('overdue_invoices') }}</span>
+          <span class="badge w-100" style="background:#D32F2F20;color:#D32F2F;border:1px solid #D32F2F40;"><strong>{{ d.overdue_count }}</strong> {{ tr('overdue_invoices') }}</span>
         </div>
       </div>
     </div>
   </div>
 
   {# ======= PRODUCTS TAB ======= #}
-  <div class=\"tab-pane fade\" id=\"products\" role=\"tabpanel\">
-    <div class=\"row g-3\">
-      <div class=\"col-6\">
-        <div class=\"card border-0 shadow-sm p-3 h-100\">
-          <h6 class=\"fw-bold mb-3\"><i class=\"bi bi-box me-2\" style=\"color:#1B2A4A;\"></i> {{ tr('top_products') }}</h6>
+  <div class="tab-pane fade" id="products" role="tabpanel">
+    <div class="row g-3">
+      <div class="col-6">
+        <div class="card border-0 shadow-sm p-3 h-100">
+          <h6 class="fw-bold mb-3"><i class="bi bi-box me-2" style="color:#1B2A4A;"></i> {{ tr('top_products') }}</h6>
           {% set max_rev = d.top_products[0].revenue if d.top_products else 1 %}
           {% for p in d.top_products[:5] %}
           {% set pct = [p.revenue / max_rev * 100, 100]|min %}
-          <div class=\"mb-2\">
-            <div class=\"d-flex justify-content-between small\">
+          <div class="mb-2">
+            <div class="d-flex justify-content-between small">
               <span>{{ p.product_name[:20] }}</span><strong>{{ currency }}{{ '%.0f'|format(p.revenue) }}</strong>
             </div>
-            <div class=\"progress\" style=\"height:5px;\">
-              <div class=\"progress-bar\" style=\"width:{{ pct }}%;background:#1B2A4A;\" role=\"progressbar\"></div>
+            <div class="progress" style="height:5px;">
+              <div class="progress-bar" style="width:{{ pct }}%;background:#1B2A4A;" role="progressbar"></div>
             </div>
           </div>
           {% endfor %}
         </div>
       </div>
-      <div class=\"col-6\">
-        <div class=\"card border-0 shadow-sm p-3 h-100\">
-          <h6 class=\"fw-bold mb-3\"><i class=\"bi bi-graph-up me-2\" style=\"color:#C8A84E;\"></i> {{ tr('sales_trend') }}</h6>
+      <div class="col-6">
+        <div class="card border-0 shadow-sm p-3 h-100">
+          <h6 class="fw-bold mb-3"><i class="bi bi-graph-up me-2" style="color:#C8A84E;"></i> {{ tr('sales_trend') }}</h6>
           {% set months = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'} %}
           {% set sales_max = d.sales_trend[0].total if d.sales_trend else 1 %}
           {% for s in d.sales_trend[-6:] %}
           {% set pct = [s.total / sales_max * 100, 100]|min %}
-          <div class=\"mb-2\">
-            <div class=\"d-flex justify-content-between small align-items-center\">
-              <span style=\"width:35px;\">{{ months.get(s.m|int, s.m) }}</span>
-              <div class=\"flex-grow-1 mx-2\">
-                <div class=\"progress\" style=\"height:5px;\">
-                  <div class=\"progress-bar\" style=\"width:{{ pct }}%;background:#C8A84E;\" role=\"progressbar\"></div>
+          <div class="mb-2">
+            <div class="d-flex justify-content-between small align-items-center">
+              <span style="width:35px;">{{ months.get(s.m|int, s.m) }}</span>
+              <div class="flex-grow-1 mx-2">
+                <div class="progress" style="height:5px;">
+                  <div class="progress-bar" style="width:{{ pct }}%;background:#C8A84E;" role="progressbar"></div>
                 </div>
               </div>
-              <strong style=\"width:70px;text-align:right;\">{{ currency }}{{ '%.0f'|format(s.total) }}</strong>
+              <strong style="width:70px;text-align:right;">{{ currency }}{{ '%.0f'|format(s.total) }}</strong>
             </div>
           </div>
           {% endfor %}
