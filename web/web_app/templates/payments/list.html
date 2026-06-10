@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}{{ tr('payments') }}{% endblock %}
+{% block content %}
+{% set currency = (company.currency + ' ') if company else 'MAD ' %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0"><i class="bi bi-credit-card"></i> {{ tr('payments') }}</h5>
+</div>
+<div class="list-group">
+  {% for p in payments %}
+  <div class="list-group-item d-flex justify-content-between align-items-center">
+    <div>
+      <a href="{{ url_for('invoices.view_invoice', id=p.invoice_id) }}" class="text-decoration-none text-dark">
+        <strong>{{ currency }}{{ '%.2f'|format(p.amount) }}</strong><br>
+        <small class="text-muted">{{ tr('invoice') }} #{{ p.invoice_id }} &middot; {{ p.date }}</small>
+      </a>
+    </div>
+    <div class="text-end">
+      <span class="badge bg-light text-dark rounded-pill">{{ p.method }}</span>
+      <br>
+      <a href="{{ url_for('payments.delete_payment', id=p.id) }}" class="btn btn-outline-danger btn-sm mt-1" onclick="return confirm('Delete this payment?')"><i class="bi bi-trash"></i></a>
+    </div>
+  </div>
+  {% else %}
+  <div class="text-center text-muted py-4">{{ tr('no_payments') }}</div>
+  {% endfor %}
+</div>
+{% endblock %}

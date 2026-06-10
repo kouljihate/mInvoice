@@ -1,0 +1,64 @@
+:root {
+  --font-latin: 'Comfortaa', 'Segoe UI', system-ui, sans-serif;
+  --font-arabic: 'Reem Kufi Fun', 'Segoe UI', system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-latin);
+  font-size: .875rem;
+}
+
+[lang="ar"] body,
+[lang="ar"] * {
+  font-family: var(--font-arabic);
+}
+
+.card {
+  border-radius: 12px;
+}
+
+.list-group-item {
+  border-left: none;
+  border-right: none;
+  border-radius: 0 !important;
+}
+
+.list-group-item:first-child {
+  border-top: none;
+}
+
+.list-group-item:last-child {
+  border-bottom: none;
+}
+
+.badge {
+  font-weight: 500;
+}
+
+.progress {
+  border-radius: 10px;
+}
+
+.navbar-brand i {
+  margin-right: 6px;
+}
+
+.nav-link i {
+  margin-right: 4px;
+}
+
+.tab-content .card {
+  border: 1px solid #e9ecef;
+  transition: box-shadow .2s;
+}
+
+.tab-content .card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+}
+
+@media (max-width: 576px) {
+  .container-fluid {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}

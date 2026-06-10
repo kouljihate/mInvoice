@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}{{ invoice.invoice_number }}{% endblock %}
+{% block content %}
+{% set currency = (company.currency + ' ') if company else 'MAD ' %}
+<div class="card border-0 shadow-sm p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-start">
+    <div>
+      <h5 class="mb-1">{{ invoice.invoice_number }}</h5>
+      <small class="text-muted">{{ invoice.customer_name }}</small><br>
+      <small class="text-muted">{{ tr('date') }}: {{ invoice.date }}</small>
+      {% if invoice.due_date %}<br><small class="text-muted">{{ tr('due_date') }}: {{ invoice.due_date }}</small>{% endif %}
+    </div>
+    <span class="badge {% if invoice.status == 'draft' %}bg-secondary{% elif invoice.status == 'sent' %}bg-info{% elif invoice.status == 'partial' %}bg-warning{% elif invoice.status == 'paid' %}bg-success{% elif invoice.status == 'cancelled' %}bg-danger{% else %}bg-primary{% endif %} fs-6">{{ tr('status_' + invoice.status) if invoice.status in ['draft','sent','partial','paid','cancelled','validated'] else invoice.status }}</span>
+  </div>
+</div>
+<div class="card border-0 shadow-sm p-3 mb-3">
+  <h6 class="fw-bold mb-2">{{ tr('items') }}</h6>
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead><tr><th>{{ tr('product') }}</th><th>{{ tr('qty') }}</th><th>{{ tr('price') }}</th><th>{{ tr('total') }}</th></tr></thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.product_name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ currency }}{{ '%.2f'|format(item.unit_price) }}</td>
+          <td class="fw-semibold">{{ currency }}{{ '%.2f'|format(item.total_ttc) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><td colspan="3" class="text-end fw-semibold">{{ tr('total_ht') }}:</td><td>{{ currency }}{{ '%.2f'|format(invoice.total_ht) }}</td></tr>
+        <tr><td colspan="3" class="text-end fw-semibold">{{ tr('total_ttc') }}:</td><td class="fw-bold">{{ currency }}{{ '%.2f'|format(invoice.total_ttc) }}</td></tr>
+        <tr><td colspan="3" class="text-end fw-semibold">{{ tr('total_paid') }}:</td><td style="color:#2E7D32;">{{ currency }}{{ '%.2f'|format(total_paid) }}</td></tr>
+        <tr><td colspan="3" class="text-end fw-bold">{{ tr('balance_due') }}:</td><td class="fw-bold" style="color:#D32F2F;">{{ currency }}{{ '%.2f'|format(invoice.total_ttc - total_paid) }}</td></tr>
+      </tfoot>
+    </table>
+  </div>
+  {% if invoice.notes %}<small class="text-muted">{{ tr('notes') }}: {{ invoice.notes }}</small>{% endif %}
+</div>
+{% if payments %}
+<div class="card border-0 shadow-sm p-3 mb-3">
+  <h6 class="fw-bold mb-2">{{ tr('payment_history') }}</h6>
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead><tr><th>{{ tr('date') }}</th><th>{{ tr('amount') }}</th><th>{{ tr('method') }}</th><th>{{ tr('notes') }}</th></tr></thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td>{{ p.date }}</td>
+          <td>{{ currency }}{{ '%.2f'|format(p.amount) }}</td>
+          <td>{{ p.method }}</td>
+          <td><small class="text-muted">{{ p.notes }}</small></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+<div class="card border-0 shadow-sm p-3 mb-3">
+  <h6 class="fw-bold mb-2">{{ tr('record_payment') }}</h6>
+  <form method="post" action="{{ url_for('invoices.pay_invoice', id=invoice.id) }}">
+    <div class="row g-2">
+      <div class="col-md-4"><input name="amount" type="number" step="0.01" class="form-control" placeholder="{{ tr('amount') }}" required></div>
+      <div class="col-md-3">
+        <select name="method" class="form-select">
+          <option value="cash">{{ tr('cash') }}</option>
+          <option value="check">{{ tr('check') }}</option>
+          <option value="bank_transfer">{{ tr('bank_transfer') }}</option>
+          <option value="card">{{ tr('card') }}</option>
+        </select>
+      </div>
+      <div class="col-md-3"><input name="date" type="date" class="form-control" value="{{ invoice.date }}"></div>
+      <div class="col-md-2"><button type="submit" class="btn btn-success btn-sm w-100"><i class="bi bi-check"></i></button></div>
+    </div>
+    <div class="mt-2"><input name="reference" class="form-control form-control-sm" placeholder="{{ tr('reference') }}"></div>
+    <div class="mt-2"><input name="notes" class="form-control form-control-sm" placeholder="{{ tr('notes') }}"></div>
+  </form>
+</div>
+<div class="d-flex gap-2 flex-wrap">
+  <a href="{{ url_for('invoices.list_invoices') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> {{ tr('cancel') }}</a>
+  {% if invoice.status == 'draft' %}
+  <a href="{{ url_for('invoices.update_invoice_status', id=invoice.id, status='sent') }}" class="btn btn-info btn-sm text-white"><i class="bi bi-send"></i> {{ tr('mark_as_sent') }}</a>
+  {% endif %}
+  {% if invoice.status == 'sent' or invoice.status == 'partial' %}
+  <a href="{{ url_for('invoices.update_invoice_status', id=invoice.id, status='paid') }}" class="btn btn-success btn-sm"><i class="bi bi-check-all"></i> Mark Paid</a>
+  {% endif %}
+  <a href="{{ url_for('invoices.invoice_pdf', id=invoice.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-file-pdf"></i> {{ tr('generate_pdf') }}</a>
+  <a href="{{ url_for('invoices.delete_invoice', id=invoice.id) }}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete this invoice?')"><i class="bi bi-trash"></i> {{ tr('delete') }}</a>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}{{ tr('quotes') }}{% endblock %}
+{% block head %}
+<style>
+.line-item td{padding:4px 4px}.line-item .form-control,.line-item .form-select{font-size:.8rem;padding:2px 6px;height:auto}
+</style>
+{% endblock %}
+{% block content %}
+<h5 class="mb-3"><i class="bi bi-file-text"></i> {{ tr('edit_quote') if quote else tr('new_quote') }}</h5>
+<form method="post">
+  <div class="mb-3">
+    <label class="form-label">{{ tr('customer') }} *</label>
+    <select name="customer_id" class="form-select" required>
+      <option value="">{{ tr('select') }}...</option>
+      {% for c in customers %}
+      <option value="{{ c.id }}" {{ 'selected' if quote and quote.customer_id==c.id else '' }}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">{{ tr('items') }}</label>
+    <div class="table-responsive">
+      <table class="table table-sm mb-2" id="itemsTable">
+        <thead><tr><th>{{ tr('product') }}</th><th>{{ tr('qty') }}</th><th>{{ tr('price') }}</th><th>{{ tr('total') }}</th><th></th></tr></thead>
+        <tbody>
+          {% if items %}
+          {% for item in items %}
+          <tr class="line-item">
+            <td>
+              <select name="product_id[]" class="form-select product-select" required>
+                <option value="">{{ tr('select') }}...</option>
+                {% for p in products %}
+                <option value="{{ p.id }}" data-price="{{ p.unit_price }}" data-name="{{ p.name }}" {{ 'selected' if item.product_id==p.id else '' }}>{{ p.name }}</option>
+                {% endfor %}
+              </select>
+              <input type="hidden" name="product_name[]" value="{{ item.product_name }}">
+            </td>
+            <td><input name="qty[]" type="number" class="form-control item-qty" value="{{ item.quantity }}" min="1" required></td>
+            <td><input name="price[]" type="number" step="0.01" class="form-control item-price" value="{{ item.unit_price }}" required></td>
+            <td class="item-total fw-semibold">{{ '%.2f'|format(item.total_ttc) }}</td>
+            <td><button type="button" class="btn btn-outline-danger btn-sm remove-item"><i class="bi bi-x"></i></button></td>
+          </tr>
+          {% endfor %}
+          {% else %}
+          <tr class="line-item">
+            <td>
+              <select name="product_id[]" class="form-select product-select" required>
+                <option value="">{{ tr('select') }}...</option>
+                {% for p in products %}
+                <option value="{{ p.id }}" data-price="{{ p.unit_price }}" data-name="{{ p.name }}">{{ p.name }}</option>
+                {% endfor %}
+              </select>
+              <input type="hidden" name="product_name[]" value="">
+            </td>
+            <td><input name="qty[]" type="number" class="form-control item-qty" value="1" min="1" required></td>
+            <td><input name="price[]" type="number" step="0.01" class="form-control item-price" value="0" required></td>
+            <td class="item-total fw-semibold">0.00</td>
+            <td><button type="button" class="btn btn-outline-danger btn-sm remove-item"><i class="bi bi-x"></i></button></td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+    <button type="button" class="btn btn-outline-primary btn-sm" id="addItem"><i class="bi bi-plus"></i> {{ tr('add_item') }}</button>
+  </div>
+  <div class="mb-3"><label class="form-label">{{ tr('notes') }}</label><textarea name="notes" class="form-control" rows="2">{{ quote.notes if quote else '' }}</textarea></div>
+  <button type="submit" class="btn btn-primary"><i class="bi bi-check"></i> {{ tr('save_quote') }}</button>
+  <a href="{{ url_for('quotes.list_quotes') }}" class="btn btn-outline-secondary">{{ tr('cancel') }}</a>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+function recalc(){document.querySelectorAll('#itemsTable tbody tr').forEach(function(r){var qty=parseFloat(r.querySelector('.item-qty').value)||0,price=parseFloat(r.querySelector('.item-price').value)||0;r.querySelector('.item-total').textContent=(qty*price*1.2).toFixed(2)})}
+document.addEventListener('change',function(e){if(e.target.closest('.product-select')){var sel=e.target,price=sel.options[sel.selectedIndex].dataset.price||'0',name=sel.options[sel.selectedIndex].dataset.name||'';var row=sel.closest('tr');row.querySelector('.item-price').value=parseFloat(price).toFixed(2);row.querySelector('input[name="product_name[]"]').value=name;recalc()}});
+document.addEventListener('input',function(e){if(e.target.closest('.item-qty')||e.target.closest('.item-price'))recalc()});
+document.getElementById('addItem').addEventListener('click',function(){var tbody=document.querySelector('#itemsTable tbody'),first=tbody.querySelector('tr'),clone=first.cloneNode(true);clone.querySelectorAll('input').forEach(function(i){i.value=i.type==='number'?'1':'0'?i.value='1':'1'?i.value='1':i.value='';(i.type==='number'&&i.classList.contains('item-qty'))?i.value='1':(i.type==='number'&&i.classList.contains('item-price'))?i.value='0':i.value=''});clone.querySelector('.item-total').textContent='0.00';clone.querySelector('select').selectedIndex=0;tbody.appendChild(clone)});
+document.addEventListener('click',function(e){if(e.target.closest('.remove-item')){var rows=document.querySelectorAll('#itemsTable tbody tr');if(rows.length>1)e.target.closest('tr').remove()}});
+</script>
+{% endblock %}

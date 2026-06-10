@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}{{ dn.delivery_number if dn else 'BL' }}{% endblock %}
+{% block content %}
+{% set currency = (company.currency + ' ') if company else 'MAD ' %}
+<div class="card border-0 shadow-sm p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-start">
+    <div>
+      <h5 class="mb-1">{{ dn.delivery_number }}</h5>
+      <small class="text-muted">{{ dn.customer_name }}</small><br>
+      <small class="text-muted">{{ tr('date') }}: {{ dn.date }}</small>
+    </div>
+  </div>
+</div>
+<div class="card border-0 shadow-sm p-3 mb-3">
+  <h6 class="fw-bold mb-2">{{ tr('items') }}</h6>
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead><tr><th>{{ tr('product') }}</th><th>{{ tr('qty') }}</th><th>{{ tr('price') }}</th><th>{{ tr('total') }}</th></tr></thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.product_name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ currency }}{{ '%.2f'|format(item.unit_price) }}</td>
+          <td class="fw-semibold">{{ currency }}{{ '%.2f'|format(item.total_ttc) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><td colspan="3" class="text-end fw-semibold">{{ tr('total_ht') }}:</td><td>{{ currency }}{{ '%.2f'|format(dn.total_ht) }}</td></tr>
+        <tr><td colspan="3" class="text-end fw-bold">{{ tr('total_ttc') }}:</td><td class="fw-bold">{{ currency }}{{ '%.2f'|format(dn.total_ttc) }}</td></tr>
+      </tfoot>
+    </table>
+  </div>
+  {% if dn.notes %}<small class="text-muted">{{ tr('notes') }}: {{ dn.notes }}</small>{% endif %}
+</div>
+<div class="d-flex gap-2">
+  <a href="{{ url_for('delivery_notes.list_delivery_notes') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> {{ tr('cancel') }}</a>
+  <a href="{{ url_for('delivery_notes.dn_pdf', id=dn.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-file-pdf"></i> {{ tr('generate_pdf') }}</a>
+</div>
+{% endblock %}

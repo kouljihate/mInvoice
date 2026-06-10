@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}{{ tr('quotes') }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0"><i class="bi bi-file-text"></i> {{ tr('quotes') }}</h5>
+  <a href="{{ url_for('quotes.add_quote') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus"></i> {{ tr('new_quote') }}</a>
+</div>
+<div class="list-group">
+  {% for q in quotes %}
+  <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+    <div>
+      <a href="{{ url_for('quotes.view_quote', id=q.id) }}" class="text-decoration-none text-dark">
+        <strong>{{ q.quote_number }}</strong><br>
+        <small class="text-muted">{{ q.customer_name }}</small>
+      </a>
+    </div>
+    <div class="text-end">
+      <span class="badge {% if q.status == 'draft' %}bg-secondary{% elif q.status == 'validated' %}bg-success{% elif q.status == 'sent' %}bg-info{% elif q.status == 'confirmed' %}bg-primary{% else %}bg-warning{% endif %} rounded-pill">{{ q.status }}</span>
+      <div class="mt-1 small">{{ '%.2f'|format(q.total_ttc) }}</div>
+    </div>
+  </div>
+  {% else %}
+  <div class="text-center text-muted py-4">{{ tr('no_quotes') }}</div>
+  {% endfor %}
+</div>
+{% endblock %}

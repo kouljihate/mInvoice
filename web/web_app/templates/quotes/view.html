@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}{{ quote.quote_number }}{% endblock %}
+{% block content %}
+{% set currency = (company.currency + ' ') if company else 'MAD ' %}
+<div class="card border-0 shadow-sm p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-start">
+    <div>
+      <h5 class="mb-1">{{ quote.quote_number }}</h5>
+      <small class="text-muted">{{ quote.customer_name }}</small><br>
+      <small class="text-muted">{{ tr('date') }}: {{ quote.date }}</small>
+      {% if quote.valid_until %}<br><small class="text-muted">{{ tr('valid_until') }}: {{ quote.valid_until }}</small>{% endif %}
+    </div>
+    <span class="badge {% if quote.status == 'draft' %}bg-secondary{% elif quote.status == 'validated' %}bg-success{% elif quote.status == 'sent' %}bg-info{% elif quote.status == 'confirmed' %}bg-primary{% else %}bg-warning{% endif %} fs-6">{{ tr('status_' + quote.status) if quote.status in ['draft','validated','sent','confirmed','cancelled'] else quote.status }}</span>
+  </div>
+</div>
+<div class="card border-0 shadow-sm p-3 mb-3">
+  <h6 class="fw-bold mb-2">{{ tr('items') }}</h6>
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead><tr><th>{{ tr('product') }}</th><th>{{ tr('qty') }}</th><th>{{ tr('price') }}</th><th>{{ tr('total') }}</th></tr></thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.product_name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ currency }}{{ '%.2f'|format(item.unit_price) }}</td>
+          <td class="fw-semibold">{{ currency }}{{ '%.2f'|format(item.total_ttc) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><td colspan="3" class="text-end fw-semibold">{{ tr('total_ht') }}:</td><td>{{ currency }}{{ '%.2f'|format(quote.total_ht) }}</td></tr>
+        <tr><td colspan="3" class="text-end fw-bold">{{ tr('total_ttc') }}:</td><td class="fw-bold">{{ currency }}{{ '%.2f'|format(quote.total_ttc) }}</td></tr>
+      </tfoot>
+    </table>
+  </div>
+  {% if quote.notes %}<small class="text-muted">{{ tr('notes') }}: {{ quote.notes }}</small>{% endif %}
+</div>
+<div class="d-flex gap-2 flex-wrap">
+  <a href="{{ url_for('quotes.list_quotes') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> {{ tr('cancel') }}</a>
+  {% if quote.status == 'draft' %}
+  <a href="{{ url_for('quotes.edit_quote', id=quote.id) }}" class="btn btn-primary btn-sm"><i class="bi bi-pencil"></i> {{ tr('edit_quote') }}</a>
+  <a href="{{ url_for('quotes.validate_quote', id=quote.id) }}" class="btn btn-success btn-sm"><i class="bi bi-check-circle"></i> {{ tr('validate') }}</a>
+  {% endif %}
+  <a href="{{ url_for('quotes.quote_pdf', id=quote.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-file-pdf"></i> {{ tr('generate_pdf') }}</a>
+  <a href="{{ url_for('quotes.delete_quote', id=quote.id) }}" class="btn btn-outline-danger btn-sm" onclick="return confirm('{{ tr('delete_quote') }}')"><i class="bi bi-trash"></i> {{ tr('delete') }}</a>
+</div>
+{% endblock %}
