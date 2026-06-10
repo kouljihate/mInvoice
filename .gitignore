@@ -10,3 +10,4 @@ pdfs/
 .gradle/
 .DS_Store
 build/
+.env

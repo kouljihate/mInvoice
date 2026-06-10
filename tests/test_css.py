@@ -1,6 +1,6 @@
 import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'web'))
-from web_app import create_app
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from app.fe.web.main import create_app
 
 app = create_app()
 with app.test_client() as c:
