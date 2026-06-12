@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 {% block title %}{{ tr('products') }}{% endblock %}
-{% set currency = (company.currency + ' ') if company else 'MAD ' %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h5 class="mb-0"><i class="bi bi-box"></i> {{ tr('products') }}</h5>
@@ -10,6 +9,10 @@
   <div class="input-group">
     <input type="text" name="q" class="form-control" placeholder="{{ tr('search') }}..." value="{{ q }}">
     <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+    <div class="input-group-text">
+      <input class="form-check-input mt-0" type="checkbox" name="low_stock" value="1" id="lowStock" {{ 'checked' if low_stock }} onchange="this.form.submit()">
+      <label class="ms-1 small" for="lowStock">Low Stock</label>
+    </div>
   </div>
 </form>
 <div class="list-group">
@@ -17,7 +20,7 @@
   <a href="{{ url_for('products.edit_product', id=p.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
     <div>
       <strong>{{ p.name }}</strong><br>
-      <small class="text-muted">{{ p.reference or '' }}{{ ' &middot; ' if p.reference else '' }}{{ currency }}{{ '%.2f'|format(p.unit_price) }}</small>
+      <small class="text-muted">{{ p.reference or '' }}{{ ' &middot; ' if p.reference else '' }}{{ '%.2f'|format(p.unit_price) }} MAD</small>
     </div>
     <span class="badge {% if p.alert_stock > 0 and p.quantity <= p.alert_stock %}bg-warning text-dark{% else %}bg-success{% endif %} rounded-pill">{{ p.quantity }} {{ p.unit or '' }}</span>
   </a>

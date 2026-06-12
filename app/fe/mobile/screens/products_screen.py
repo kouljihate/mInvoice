@@ -5,17 +5,22 @@ from app.shared.utils import tr_static
 
 
 def products_view(page, navigate):
+    low_only = ft.Checkbox(label="Low Stock", value=False,
+        on_change=lambda e: load(search_f.value, e.control.value))
+
     search_f = ft.TextField(
-        hint_text=tr_static(page.session.store.get("lang", "en"), "search"), prefix_icon=ft.Icons.SEARCH, width=400,
+        hint_text=tr_static(page.session.store.get("lang") or "en", "search"), prefix_icon=ft.Icons.SEARCH, expand=True,
         border_radius=8, border_color="#E5E7EB", focused_border_color=PRIMARY,
-        on_change=lambda e: load(e.control.value),
+        on_change=lambda e: load(e.control.value, low_only.value),
     )
 
-    def load(query=""):
+    def load(query="", low=False):
         products = page.db.search_products(query) if query else page.db.get_all_products()
+        if low:
+            products = [p for p in products if p.alert_stock > 0 and p.quantity <= p.alert_stock]
         rows.controls.clear()
         if not products:
-            rows.controls.append(ft.Text(tr_static(page.session.store.get("lang", "en"), "no_products"), color="#6B7280"))
+            rows.controls.append(ft.Text(tr_static(page.session.store.get("lang") or "en", "no_products"), color="#6B7280"))
         else:
             for p in products:
                 photo = ft.Container(width=44, height=44, bgcolor="#E5E7EB", border_radius=8)
@@ -35,8 +40,8 @@ def products_view(page, navigate):
                                     alignment=ft.alignment.Alignment(0, 0),
                                 ) if low_stock else ft.Container(),
                             ], spacing=4),
-                            ft.Text(f"{tr_static(page.session.store.get('lang', 'en'), 'ref')}: {p.reference}{pkg}", size=11, color="#6B7280"),
-                            ft.Text(f"{tr_static(page.session.store.get('lang', 'en'), 'stock')}: {p.quantity} {p.unit} | {p.unit_price:,.0f} MAD/{p.unit}", size=12,
+                            ft.Text(f"{tr_static(page.session.store.get('lang') or 'en', 'ref')}: {p.reference}{pkg}", size=11, color="#6B7280"),
+                            ft.Text(f"{tr_static(page.session.store.get('lang') or 'en', 'stock')}: {p.quantity} {p.unit} | {p.unit_price:,.2f} MAD/{p.unit}", size=12,
                                     color=WARNING if low_stock else "#374151"),
                         ], expand=True, spacing=2),
                         ft.IconButton(ft.Icons.EDIT, icon_color="#2563EB", icon_size=20, on_click=lambda e, pid=p.id: navigate(f"/edit_product/{pid}")),
@@ -46,7 +51,7 @@ def products_view(page, navigate):
         page.update()
 
     def delete(pid):
-        page.db.delete_product(pid); load()
+        page.db.delete_product(pid); load(low=low_only.value)
 
     async def pick_bulk():
         files = await bulk_fp.pick_files(allow_multiple=False, file_type=ft.FilePickerFileType.CUSTOM, allowed_extensions=["json", "csv"])
@@ -112,7 +117,7 @@ def products_view(page, navigate):
         page.snack_bar = ft.SnackBar(ft.Text(msg))
         page.snack_bar.open = True
         page.update()
-        load()
+        load(low=low_only.value)
 
     bulk_fp = ft.FilePicker()
     rows = ft.Column(spacing=8, scroll=ft.ScrollMode.AUTO)
@@ -125,10 +130,10 @@ def products_view(page, navigate):
             ft.IconButton(ft.Icons.ADD, icon_color=ft.Colors.WHITE, on_click=lambda e: navigate("/add_product")),
         ],
         content=ft.Container(
-            content=ft.Column([search_f, rows], spacing=8, scroll=ft.ScrollMode.AUTO),
+            content=ft.Column([ft.Row([search_f, low_only], spacing=8), rows], spacing=8, scroll=ft.ScrollMode.AUTO),
             expand=True, padding=16)))
     page.update()
-    load()
+    load(low=low_only.value)
 
 
 def product_form_view(page, navigate, product_id=None):

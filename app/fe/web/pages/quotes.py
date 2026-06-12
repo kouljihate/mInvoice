@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.fe.web.utils import login_required, get_db, tr
-from app.shared.models import Quote, QuoteItem, DeliveryNote, Invoice, InvoiceItem
+from app.shared.models import Quote, QuoteItem, DeliveryNote, Invoice, InvoiceItem, Payment
 
 quotes_bp = Blueprint('quotes', __name__)
 
@@ -40,13 +40,12 @@ def add_quote():
             price = float(prices[i]) if prices[i] else 0
             item = QuoteItem(quote_id=quote_id, product_id=pid,
                            product_name=product_names[i] if i < len(product_names) else '',
-                           quantity=qty, unit_price=price, tva_rate=20)
+                           quantity=qty, unit_price=price, tva_rate=0)
             items.append(item)
             total_ht += item.total_ht
-        total_ttc = total_ht * 1.2
         q.id = quote_id
         q.total_ht = total_ht
-        q.total_ttc = total_ttc
+        q.total_ttc = total_ht * 1.2
         db.update_quote(q)
         db.insert_quote_items(items)
         db.close()
@@ -84,7 +83,7 @@ def edit_quote(id):
             price = float(prices[i]) if prices[i] else 0
             item = QuoteItem(quote_id=id, product_id=pid,
                            product_name=product_names[i] if i < len(product_names) else '',
-                           quantity=qty, unit_price=price, tva_rate=20)
+                           quantity=qty, unit_price=price, tva_rate=0)
             items.append(item)
             total_ht += item.total_ht
         quote.total_ht = total_ht
@@ -127,8 +126,11 @@ def validate_quote(id):
     dn = DeliveryNote(quote_id=id, customer_id=quote.customer_id, date=now,
                       total_ht=quote.total_ht, total_ttc=quote.total_ttc)
     dn_id = db.insert_delivery_note(dn)
+    notes_list = (quote.notes or "").split("\n\n")
     inv = Invoice(quote_id=id, delivery_note_id=dn_id, customer_id=quote.customer_id,
                   date=now, due_date='', status='draft',
+                  note1=notes_list[0] if len(notes_list) > 0 else "",
+                  note2=notes_list[1] if len(notes_list) > 1 else "",
                   total_ht=quote.total_ht, total_tva=quote.total_ttc - quote.total_ht,
                   total_ttc=quote.total_ttc)
     inv_id = db.insert_invoice(inv)
@@ -141,8 +143,12 @@ def validate_quote(id):
         ))
     if invoice_items:
         db.insert_invoice_items(invoice_items)
+    pmt = Payment(invoice_id=inv_id, amount=quote.total_ttc, date=now,
+                  method="cash", status="draft",
+                  notes="Created from quote validation")
+    db.insert_payment(pmt)
     db.close()
-    flash(f'Quote validated! Delivery Note #{dn_id} and Invoice #{inv_id} created.', 'success')
+    flash(f'Quote validated! Delivery Note #{dn_id}, Invoice #{inv_id} and Payment created.', 'success')
     return redirect(url_for('quotes.view_quote', id=id))
 
 @quotes_bp.route('/quotes/<int:id>/delete')
@@ -157,7 +163,7 @@ def delete_quote(id):
 @quotes_bp.route('/quotes/<int:id>/pdf')
 @login_required
 def quote_pdf(id):
-    from app.pdf_gen import generate_quote_pdf
+    from app.be.services.pdf_service import generate_quote_pdf
     from flask import send_file
     db = get_db(quotes_bp)
     quote = db.get_quote(id)

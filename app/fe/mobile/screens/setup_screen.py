@@ -10,6 +10,7 @@ def setup_view(page, navigate):
         ("co_cp", "Postal Code"), ("co_phone", "Phone"), ("co_email", "Email"),
         ("co_web", "Website"), ("co_ice", "ICE"), ("co_tax", "IF (Tax ID)"),
         ("co_tp", "TP"), ("co_rc", "RC"), ("co_cnss", "CNSS"),
+        ("co_bank", "Bank Account Number"), ("co_slogan", "Slogan"),
     ]
     for key, label in labels:
         fields[key] = ft.TextField(label=label, width=400, border_radius=8,
@@ -66,7 +67,8 @@ def setup_view(page, navigate):
                 website=fields["co_web"].value, tax_id=fields["co_tax"].value,
                 ice=fields["co_ice"].value, rc=fields["co_rc"].value,
                 if_tax=fields["co_tax"].value, tp=fields["co_tp"].value,
-                cnss=fields["co_cnss"].value,
+                cnss=fields["co_cnss"].value, bank_account=fields["co_bank"].value,
+                slogan=fields["co_slogan"].value,
                 logo_path=logo_dest, currency=fields["co_currency"].value
             ))
             page.db.insert_user(User(username=adm_user.value, password=adm_pass.value, full_name=adm_name.value))
@@ -83,51 +85,61 @@ def setup_view(page, navigate):
             error_txt.value = f"Error: {ex}"
             page.update()
 
+    def _card(title, content):
+        return ft.Container(
+            content=ft.Column([
+                ft.Text(title, size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
+                ft.Divider(height=1, color="#E5E7EB"),
+                ft.Container(height=8),
+                *content,
+            ]),
+            bgcolor=ft.Colors.WHITE, padding=20, border_radius=16,
+            shadow=ft.BoxShadow(blur_radius=8, color="rgba(0,0,0,0.05)", offset=ft.Offset(0, 2)),
+        )
+
     page.controls.clear()
     page.bgcolor = "#F0F2F5"
     page.add(ft.Container(
         content=ft.Column([
-            ft.Container(height=20),
+            ft.Container(height=16),
             ft.Container(
                 content=ft.Icon(ft.Icons.BUSINESS, size=40, color=ft.Colors.WHITE),
                 bgcolor=PRIMARY, padding=16, border_radius=24,
             ),
-            ft.Container(height=12),
-            ft.Text("Welcome to mobile Invoicing", size=22, weight=ft.FontWeight.BOLD, color=PRIMARY),
+            ft.Container(height=10),
+            ft.Text("Welcome to Mobile Invoice", size=22, weight=ft.FontWeight.BOLD, color=PRIMARY),
             ft.Text("Set up your company", size=13, color=TEXT_SECONDARY),
-            ft.Divider(height=20, color="transparent"),
-            ft.Container(
-                content=ft.Column([
-                    ft.Text("Company Information", size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
-                    fields["co_name"], fields["co_addr"],
-                    ft.Row([fields["co_city"], fields["co_cp"]], spacing=10),
-                    fields["co_phone"], fields["co_email"], fields["co_web"],
-                    ft.Divider(height=12, color="transparent"),
-                    ft.Text("Moroccan Tax Info", size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
-                    fields["co_ice"], fields["co_tax"], fields["co_tp"], fields["co_rc"], fields["co_cnss"],
-                    ft.Divider(height=12, color="transparent"),
-                    fields["co_currency"],
-                    ft.Divider(height=12, color="transparent"),
-                    ft.Text("Admin Account", size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
-                    adm_name, adm_user, adm_pass,
-                    ft.Divider(height=16, color="transparent"),
-                    ft.Text("Invoice Template Sections", size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
-                    ft.Text("Enable or disable invoice layout sections:", size=12, color=TEXT_SECONDARY),
-                    ft.Container(height=4),
-                    *[section_toggles[k] for k, _ in section_keys],
-                    ft.Column([
-                        logo_path,
-                        error_txt,
-                        ft.Container(height=8),
-                        ft.Button("Save & Continue", width=200, height=48, on_click=do_save,
-                            style=ft.ButtonStyle(bgcolor=PRIMARY, color=ft.Colors.WHITE,
-                                shape=ft.RoundedRectangleBorder(radius=10), elevation=2)),
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                ]),
-                bgcolor=ft.Colors.WHITE, padding=24, border_radius=16,
-                shadow=ft.BoxShadow(blur_radius=12, color="rgba(0,0,0,0.06)", offset=ft.Offset(0, 2)),
-            ),
+            ft.Divider(height=16, color="transparent"),
+            _card("Company Information", [
+                fields["co_name"], fields["co_addr"],
+                ft.Row([fields["co_city"], fields["co_cp"]], spacing=10),
+                fields["co_phone"], fields["co_email"], fields["co_web"],
+                logo_path,
+            ]),
+            ft.Divider(height=12, color="transparent"),
+            _card("Moroccan Tax Info", [
+                fields["co_ice"], fields["co_tax"], fields["co_tp"], fields["co_rc"], fields["co_cnss"],
+                fields["co_bank"], fields["co_slogan"], fields["co_currency"],
+            ]),
+            ft.Divider(height=12, color="transparent"),
+            _card("Admin Account", [
+                adm_name, adm_user, adm_pass,
+            ]),
+            ft.Divider(height=12, color="transparent"),
+            _card("Invoice Template", [
+                ft.Text("Enable or disable invoice layout sections:", size=12, color=TEXT_SECONDARY),
+                ft.Container(height=4),
+                *[section_toggles[k] for k, _ in section_keys],
+            ]),
+            ft.Divider(height=16, color="transparent"),
+            ft.Column([
+                error_txt,
+                ft.Button("Save & Continue", width=240, height=48, on_click=do_save,
+                    style=ft.ButtonStyle(bgcolor=PRIMARY, color=ft.Colors.WHITE,
+                        shape=ft.RoundedRectangleBorder(radius=10), elevation=2)),
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+            ft.Container(height=20),
         ], scroll=ft.ScrollMode.AUTO, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-        padding=20, expand=True,
+        padding=16, expand=True,
     ))
     page.update()

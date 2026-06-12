@@ -6,7 +6,7 @@ from app.fe.mobile.widgets.theme import PRIMARY, BACKGROUND, TEXT_SECONDARY
 
 def customers_view(page, navigate):
     search_f = ft.TextField(
-        hint_text=tr_static(page.session.store.get("lang", "en"), "search"), prefix_icon=ft.Icons.SEARCH, width=400,
+        hint_text=tr_static(page.session.store.get("lang") or "en", "search"), prefix_icon=ft.Icons.SEARCH, width=400,
         border_radius=8, border_color="#E5E7EB", focused_border_color=PRIMARY,
         on_change=lambda e: load(e.control.value),
     )
@@ -15,7 +15,7 @@ def customers_view(page, navigate):
         customers = page.db.search_customers(query) if query else page.db.get_all_customers()
         rows.controls.clear()
         if not customers:
-            rows.controls.append(ft.Text(tr_static(page.session.store.get("lang", "en"), "no_customers"), color="#6B7280"))
+            rows.controls.append(ft.Text(tr_static(page.session.store.get("lang") or "en", "no_customers"), color="#6B7280"))
         else:
             for c in customers:
                 avatar = ft.Container(
@@ -30,7 +30,7 @@ def customers_view(page, navigate):
                         ft.Column([
                             ft.Row([
                                 ft.Text(c.name, weight=ft.FontWeight.BOLD, size=15, color="#1A1A2E", expand=True),
-                                status_badge(tr_static(page.session.store.get("lang", "en"), "type_company") if c.customer_type == "company" else tr_static(page.session.store.get("lang", "en"), "type_private")),
+                                status_badge(tr_static(page.session.store.get("lang") or "en", "type_company") if c.customer_type == "company" else tr_static(page.session.store.get("lang") or "en", "type_private")),
                             ], spacing=4),
                             ft.Text(c.address, size=11, color=TEXT_SECONDARY),
                             ft.Row([
@@ -87,7 +87,7 @@ def customers_view(page, navigate):
                 if isinstance(data, dict):
                     data = [data]
                 if not isinstance(data, list):
-                    page.snack_bar = ft.SnackBar(ft.Text(tr_static(page.session.store.get("lang", "en"), "invalid_json"))); page.snack_bar.open = True; page.update(); return
+                    page.snack_bar = ft.SnackBar(ft.Text(tr_static(page.session.store.get("lang") or "en", "invalid_json"))); page.snack_bar.open = True; page.update(); return
                 for i, item in enumerate(data):
                     cust = check_record(item, f"Row {i+1}")
                     if cust:
@@ -100,7 +100,7 @@ def customers_view(page, navigate):
                 with open(fpath, encoding="utf-8-sig") as f:
                     reader = csv.DictReader(f)
                     if not reader.fieldnames or "name" not in reader.fieldnames:
-                        page.snack_bar = ft.SnackBar(ft.Text(tr_static(page.session.store.get("lang", "en"), "invalid_csv") + " Expected columns: name, customer_type, address, phone, email, tax_id, rc, if_tax, cnss, photo_path")); page.snack_bar.open = True; page.update(); return
+                        page.snack_bar = ft.SnackBar(ft.Text(tr_static(page.session.store.get("lang") or "en", "invalid_csv") + " Expected columns: name, customer_type, address, phone, email, tax_id, rc, if_tax, cnss, photo_path")); page.snack_bar.open = True; page.update(); return
                     for i, row in enumerate(reader, 1):
                         cust = check_record(row, f"Row {i}")
                         if cust:
@@ -110,11 +110,11 @@ def customers_view(page, navigate):
                             except Exception as ex:
                                 errors.append(f"Row {i} ({cust.name}): {ex}")
         except json.JSONDecodeError as ex:
-            page.snack_bar = ft.SnackBar(ft.Text(f"{tr_static(page.session.store.get('lang', 'en'), 'file_error')}: {ex}")); page.snack_bar.open = True; page.update(); return
+            page.snack_bar = ft.SnackBar(ft.Text(f"{tr_static(page.session.store.get('lang') or 'en', 'file_error')}: {ex}")); page.snack_bar.open = True; page.update(); return
         except Exception as ex:
-            page.snack_bar = ft.SnackBar(ft.Text(f"{tr_static(page.session.store.get('lang', 'en'), 'file_error')}: {ex}")); page.snack_bar.open = True; page.update(); return
+            page.snack_bar = ft.SnackBar(ft.Text(f"{tr_static(page.session.store.get('lang') or 'en', 'file_error')}: {ex}")); page.snack_bar.open = True; page.update(); return
 
-        msg = f"{tr_static(page.session.store.get('lang', 'en'), 'imported')} {imported} {tr_static(page.session.store.get('lang', 'en'), 'customer_s')}"
+        msg = f"{tr_static(page.session.store.get('lang') or 'en', 'imported')} {imported} {tr_static(page.session.store.get('lang') or 'en', 'customer_s')}"
         if errors:
             short = errors[:3]
             msg += ". First errors: " + "; ".join(short)
@@ -127,9 +127,9 @@ def customers_view(page, navigate):
     rows = ft.Column(spacing=8, scroll=ft.ScrollMode.AUTO)
     page.controls.clear()
     page.bgcolor = BACKGROUND
-    page.add(page_layout(page, navigate, tr_static(page.session.store.get("lang", "en"), "customers"), back_route="/dashboard",
+    page.add(page_layout(page, navigate, tr_static(page.session.store.get("lang") or "en", "customers"), back_route="/dashboard",
                 actions=[
-                    ft.TextButton(tr_static(page.session.store.get("lang", "en"), "bulk"), icon=ft.Icons.UPLOAD_FILE, style=ft.ButtonStyle(color=ft.Colors.WHITE),
+                    ft.TextButton(tr_static(page.session.store.get("lang") or "en", "bulk"), icon=ft.Icons.UPLOAD_FILE, style=ft.ButtonStyle(color=ft.Colors.WHITE),
                                  on_click=lambda e: page.run_task(pick_bulk)),
                     ft.IconButton(ft.Icons.ADD, icon_color=ft.Colors.WHITE, on_click=lambda e: navigate("/add_customer")),
                 ],
@@ -141,19 +141,19 @@ def customers_view(page, navigate):
 
 
 def customer_form_view(page, navigate, customer_id=None):
-    type_f = ft.Dropdown(label=tr_static(page.session.store.get("lang", "en"), "customer_type"), width=400, options=[
-        ft.dropdown.Option("private", tr_static(page.session.store.get("lang", "en"), "private")),
-        ft.dropdown.Option("company", tr_static(page.session.store.get("lang", "en"), "company")),
+    type_f = ft.Dropdown(label=tr_static(page.session.store.get("lang") or "en", "customer_type"), width=400, options=[
+        ft.dropdown.Option("private", tr_static(page.session.store.get("lang") or "en", "private")),
+        ft.dropdown.Option("company", tr_static(page.session.store.get("lang") or "en", "company")),
     ], value="private", border_radius=8, focused_border_color=PRIMARY)
-    name_f = ft.TextField(label=tr_static(page.session.store.get("lang", "en"), "customer_name"), width=400, border_radius=8, focused_border_color=PRIMARY)
-    addr_f = ft.TextField(label=tr_static(page.session.store.get("lang", "en"), "address"), width=400, multiline=True, min_lines=2, border_radius=8, focused_border_color=PRIMARY)
-    phone_f = ft.TextField(label=tr_static(page.session.store.get("lang", "en"), "phone"), width=400, border_radius=8, focused_border_color=PRIMARY)
-    email_f = ft.TextField(label=tr_static(page.session.store.get("lang", "en"), "email"), width=400, border_radius=8, focused_border_color=PRIMARY)
-    tax_f = ft.TextField(label=tr_static(page.session.store.get("lang", "en"), "ice_tax_id"), width=400, border_radius=8, focused_border_color=PRIMARY)
-    rc_f = ft.TextField(label=tr_static(page.session.store.get("lang", "en"), "rc"), width=400, border_radius=8, focused_border_color=PRIMARY)
-    if_tax_f = ft.TextField(label=tr_static(page.session.store.get("lang", "en"), "if_tax"), width=400, border_radius=8, focused_border_color=PRIMARY)
-    cnss_f = ft.TextField(label=tr_static(page.session.store.get("lang", "en"), "cnss"), width=400, border_radius=8, focused_border_color=PRIMARY)
-    photo_text = ft.Text(tr_static(page.session.store.get("lang", "en"), "no_photo"), size=12, color="#6B7280")
+    name_f = ft.TextField(label=tr_static(page.session.store.get("lang") or "en", "customer_name"), width=400, border_radius=8, focused_border_color=PRIMARY)
+    addr_f = ft.TextField(label=tr_static(page.session.store.get("lang") or "en", "address"), width=400, multiline=True, min_lines=2, border_radius=8, focused_border_color=PRIMARY)
+    phone_f = ft.TextField(label=tr_static(page.session.store.get("lang") or "en", "phone"), width=400, border_radius=8, focused_border_color=PRIMARY)
+    email_f = ft.TextField(label=tr_static(page.session.store.get("lang") or "en", "email"), width=400, border_radius=8, focused_border_color=PRIMARY)
+    tax_f = ft.TextField(label=tr_static(page.session.store.get("lang") or "en", "ice_tax_id"), width=400, border_radius=8, focused_border_color=PRIMARY)
+    rc_f = ft.TextField(label=tr_static(page.session.store.get("lang") or "en", "rc"), width=400, border_radius=8, focused_border_color=PRIMARY)
+    if_tax_f = ft.TextField(label=tr_static(page.session.store.get("lang") or "en", "if_tax"), width=400, border_radius=8, focused_border_color=PRIMARY)
+    cnss_f = ft.TextField(label=tr_static(page.session.store.get("lang") or "en", "cnss"), width=400, border_radius=8, focused_border_color=PRIMARY)
+    photo_text = ft.Text(tr_static(page.session.store.get("lang") or "en", "no_photo"), size=12, color="#6B7280")
     photo_val = ft.Text("")
     photo_preview = ft.Container(width=80, height=80, bgcolor="#E5E7EB", border_radius=10)
 
@@ -181,7 +181,7 @@ def customer_form_view(page, navigate, customer_id=None):
                 photo_preview.bgcolor = None
 
     def save(e):
-        if not name_f.value: error_txt.value = tr_static(page.session.store.get("lang", "en"), "customer_name_required"); page.update(); return
+        if not name_f.value: error_txt.value = tr_static(page.session.store.get("lang") or "en", "customer_name_required"); page.update(); return
         from app.shared.models import Customer
         dest = photo_val.value
         if photo_val.value:
@@ -189,7 +189,7 @@ def customer_form_view(page, navigate, customer_id=None):
             os.makedirs(d, exist_ok=True)
             dest = os.path.join(d, f"cust_{customer_id or 'new'}{os.path.splitext(photo_val.value)[1]}")
             try: shutil.copy2(photo_val.value, dest)
-            except Exception as ex: error_txt.value = f"{tr_static(page.session.store.get('lang', 'en'), 'photo_error')}: {ex}"; page.update(); return
+            except Exception as ex: error_txt.value = f"{tr_static(page.session.store.get('lang') or 'en', 'photo_error')}: {ex}"; page.update(); return
         cust = Customer(id=customer_id or 0, name=name_f.value,
                         customer_type=type_f.value, address=addr_f.value,
                         phone=phone_f.value, email=email_f.value, tax_id=tax_f.value,
@@ -199,7 +199,7 @@ def customer_form_view(page, navigate, customer_id=None):
         else: page.db.insert_customer(cust)
         navigate("/customers")
 
-    title = tr_static(page.session.store.get("lang", "en"), "edit_customer") if customer_id else tr_static(page.session.store.get("lang", "en"), "add_customer")
+    title = tr_static(page.session.store.get("lang") or "en", "edit_customer") if customer_id else tr_static(page.session.store.get("lang") or "en", "add_customer")
     page.controls.clear()
     page.bgcolor = BACKGROUND
     page.add(page_layout(page, navigate, title, back_route="/customers",
@@ -208,16 +208,16 @@ def customer_form_view(page, navigate, customer_id=None):
                 ft.Container(
                     content=ft.Column([
                         ft.Container(content=photo_preview, alignment=ft.alignment.Alignment(0, 0), padding=ft.Padding(top=0, bottom=10, left=0, right=0)),
-                        ft.Text(tr_static(page.session.store.get("lang", "en"), "customer_details"), size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
+                        ft.Text(tr_static(page.session.store.get("lang") or "en", "customer_details"), size=15, weight=ft.FontWeight.BOLD, color=PRIMARY),
                         type_f, name_f, addr_f, phone_f, email_f, tax_f, rc_f, if_tax_f, cnss_f,
                         ft.Divider(height=16, color="transparent"),
                         ft.Row([
-                            ft.Text(tr_static(page.session.store.get("lang", "en"), "photo_logo"), size=15, weight=ft.FontWeight.BOLD, color=PRIMARY, expand=True),
-                            ft.Button(tr_static(page.session.store.get("lang", "en"), "select"), icon=ft.Icons.IMAGE, on_click=lambda e: page.run_task(pick_photo)),
+                            ft.Text(tr_static(page.session.store.get("lang") or "en", "photo_logo"), size=15, weight=ft.FontWeight.BOLD, color=PRIMARY, expand=True),
+                            ft.Button(tr_static(page.session.store.get("lang") or "en", "select"), icon=ft.Icons.IMAGE, on_click=lambda e: page.run_task(pick_photo)),
                         ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
                         error_txt,
                         ft.Container(height=12),
-                        ft.Button(tr_static(page.session.store.get("lang", "en"), "save"), width=400, height=48, on_click=save,
+                        ft.Button(tr_static(page.session.store.get("lang") or "en", "save"), width=400, height=48, on_click=save,
                             style=ft.ButtonStyle(bgcolor=PRIMARY, color=ft.Colors.WHITE,
                                 shape=ft.RoundedRectangleBorder(radius=10), elevation=2)),
                     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),

@@ -19,6 +19,8 @@ class Company:
     tp: str = ""
     cnss: str = ""
     logo_path: str = ""
+    bank_account: str = ""
+    slogan: str = ""
     currency: str = "MAD"
 
 
@@ -124,6 +126,8 @@ class Invoice:
     due_date: str = ""
     status: str = "draft"
     notes: str = ""
+    note1: str = ""
+    note2: str = ""
     total_ht: float = 0.0
     total_tva: float = 0.0
     total_ttc: float = 0.0

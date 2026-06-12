@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}{{ dn.delivery_number if dn else 'BL' }}{% endblock %}
 {% block content %}
-{% set currency = (company.currency + ' ') if company else 'MAD ' %}
 <div class="card border-0 shadow-sm p-3 mb-3">
   <div class="d-flex justify-content-between align-items-start">
     <div>
@@ -21,14 +20,14 @@
         <tr>
           <td>{{ item.product_name }}</td>
           <td>{{ item.quantity }}</td>
-          <td>{{ currency }}{{ '%.2f'|format(item.unit_price) }}</td>
-          <td class="fw-semibold">{{ currency }}{{ '%.2f'|format(item.total_ttc) }}</td>
+          <td>{{ '%.2f'|format(item.unit_price) }} MAD</td>
+          <td class="fw-semibold">{{ '%.2f'|format(item.total_ttc) }} MAD</td>
         </tr>
         {% endfor %}
       </tbody>
       <tfoot>
-        <tr><td colspan="3" class="text-end fw-semibold">{{ tr('total_ht') }}:</td><td>{{ currency }}{{ '%.2f'|format(dn.total_ht) }}</td></tr>
-        <tr><td colspan="3" class="text-end fw-bold">{{ tr('total_ttc') }}:</td><td class="fw-bold">{{ currency }}{{ '%.2f'|format(dn.total_ttc) }}</td></tr>
+        <tr><td colspan="3" class="text-end fw-semibold">{{ tr('total_ht') }}:</td><td>{{ '%.2f'|format(dn.total_ht) }} MAD</td></tr>
+        <tr><td colspan="3" class="text-end fw-bold">{{ tr('total_ttc') }}:</td><td class="fw-bold">{{ '%.2f'|format(dn.total_ttc) }} MAD</td></tr>
       </tfoot>
     </table>
   </div>

@@ -4,9 +4,9 @@
 <div class="row justify-content-center mt-5">
   <div class="col-md-4">
     <div class="card shadow">
-      <div class="card-body p-4 text-center">
+      <div class="card-body p-5 text-center position-relative" style="min-height:500px;">
         <i class="bi bi-receipt text-primary" style="font-size:3rem;"></i>
-        <h4 class="mt-2">mInvoice</h4>
+        <h4 class="mt-2">Web Invoice</h4>
         <p class="text-muted small">Manage your business</p>
         {% if error %}<div class="alert alert-danger py-2">Invalid credentials</div>{% endif %}
         <form method="post">
@@ -18,6 +18,7 @@
           </div>
           <button type="submit" class="btn btn-primary w-100">Login</button>
         </form>
+        <div class="text-center text-muted small position-absolute bottom-0 start-0 end-0 pb-2">v{{ version }} - @koul</div>
       </div>
     </div>
   </div>

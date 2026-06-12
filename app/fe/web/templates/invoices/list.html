@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}{{ tr('invoices') }}{% endblock %}
 {% block content %}
-{% set currency = (company.currency + ' ') if company else 'MAD ' %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h5 class="mb-0"><i class="bi bi-receipt"></i> {{ tr('invoices') }}</h5>
 </div>
@@ -10,11 +9,12 @@
   <a href="{{ url_for('invoices.view_invoice', id=inv.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
     <div>
       <strong>{{ inv.invoice_number }}</strong><br>
+      <small class="text-muted">{{ inv.date[:10] }}</small><br>
       <small class="text-muted">{{ inv.customer_name }}</small>
     </div>
     <div class="text-end">
       <span class="badge {% if inv.status == 'draft' %}bg-secondary{% elif inv.status == 'sent' %}bg-info{% elif inv.status == 'partial' %}bg-warning{% elif inv.status == 'paid' %}bg-success{% elif inv.status == 'cancelled' %}bg-danger{% else %}bg-primary{% endif %} rounded-pill">{{ tr('status_' + inv.status) if inv.status in ['draft','sent','partial','paid','cancelled','validated'] else inv.status }}</span>
-      <div class="mt-1 small">{{ currency }}{{ '%.2f'|format(inv.total_ttc) }}</div>
+      <div class="mt-1 small">{{ '%.2f'|format(inv.total_ttc) }} MAD</div>
     </div>
   </a>
   {% else %}

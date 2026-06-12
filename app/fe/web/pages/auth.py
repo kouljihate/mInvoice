@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from app import __version__
 from app.fe.web.utils import get_db, tr
 from app.shared.models import Company, User
 
@@ -26,9 +27,9 @@ def login():
             db.close()
             return redirect(url_for('dashboard.dashboard'))
         db.close()
-        return render_template('login.html', error=True)
+        return render_template('login.html', error=True, version=__version__)
     db.close()
-    return render_template('login.html', error=False)
+    return render_template('login.html', error=False, version=__version__)
 
 @auth_bp.route('/logout')
 def logout():
@@ -56,6 +57,8 @@ def setup():
             if_tax=request.form.get('if_tax', ''),
             tp=request.form.get('tp', ''),
             cnss=request.form.get('cnss', ''),
+            bank_account=request.form.get('bank_account', ''),
+            slogan=request.form.get('slogan', ''),
             currency=request.form.get('currency', 'MAD'),
         )
         db.save_company(company)
@@ -66,6 +69,16 @@ def setup():
         )
         db.insert_user(user)
         db.create_default_invoice_template()
+        existing = {s.section_key: s for s in db.get_template_sections("invoice")}
+        section_keys = [
+            "header_company_info", "header_customer_info", "body_title",
+            "body_attention", "body_items_table", "body_note1", "body_note2",
+            "footer_left", "footer_right",
+        ]
+        for key in section_keys:
+            if key in existing:
+                existing[key].is_visible = request.form.get(f"section_{key}") == "on"
+                db.save_template_section(existing[key])
         db.close()
         flash('Company setup complete! Please login.', 'success')
         return redirect(url_for('auth.login'))

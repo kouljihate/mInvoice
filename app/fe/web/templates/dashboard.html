@@ -1,23 +1,23 @@
 {% extends 'base.html' %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-{% set currency = (company.currency + ' ') if company else 'MAD ' %}
+
 
 <div class="row mb-3">
   <div class="col-12">
     <div class="p-3 rounded-4 text-white" style="background:#1B2A4A;">
       <div class="d-flex align-items-center gap-2 mb-2">
         <div class="p-2 rounded-3" style="background:rgba(255,255,255,0.15)"><i class="bi bi-receipt"></i></div>
-        <h5 class="mb-0">mInvoice</h5>
+        <h5 class="mb-0">Web Invoice</h5>
       </div>
       <div class="row mt-2">
         <div class="col-6">
           <small class="text-white-50">{{ tr('revenue') }}</small>
-          <h4 class="mb-0 fw-bold">{{ currency }}{{ '%.0f'|format(d.sales_month) }}</h4>
+          <h4 class="mb-0 fw-bold">{{ '%.2f'|format(d.sales_month) }} MAD</h4>
         </div>
         <div class="col-6 text-end">
           <small class="text-white-50">{{ tr('outstanding') }}</small>
-          <h4 class="mb-0 fw-bold" style="color:#FBBF24;">{{ currency }}{{ '%.0f'|format(d.outstanding) }}</h4>
+          <h4 class="mb-0 fw-bold" style="color:#FBBF24;">{{ '%.2f'|format(d.outstanding) }} MAD</h4>
         </div>
       </div>
     </div>
@@ -46,13 +46,13 @@
       <div class="col-6"><a href="{{ url_for('customers.list_customers') }}" class="text-decoration-none">
         <div class="card border-0 shadow-sm text-center p-3">
           <div class="p-2 rounded-3 d-inline-block mx-auto" style="background:#05966920;"><i class="bi bi-people fs-5" style="color:#059669;"></i></div>
-          <small class="mt-2 fw-semibold">{{ tr('customers') }}</small>
+          <small class="mt-2 fw-semibold">{{ tr('customers') }} <span class="text-muted">({{ d.total_customers }})</span></small>
         </div></a>
       </div>
       <div class="col-6"><a href="{{ url_for('products.list_products') }}" class="text-decoration-none">
         <div class="card border-0 shadow-sm text-center p-3">
           <div class="p-2 rounded-3 d-inline-block mx-auto" style="background:#0891B220;"><i class="bi bi-box fs-5" style="color:#0891B2;"></i></div>
-          <small class="mt-2 fw-semibold">{{ tr('products') }}</small>
+          <small class="mt-2 fw-semibold">{{ tr('products') }} <span class="text-muted">({{ d.total_products }})</span></small>
         </div></a>
       </div>
     </div>
@@ -60,25 +60,25 @@
       <div class="col-6"><a href="{{ url_for('quotes.list_quotes') }}" class="text-decoration-none">
         <div class="card border-0 shadow-sm text-center p-3">
           <div class="p-2 rounded-3 d-inline-block mx-auto" style="background:#D9770620;"><i class="bi bi-file-text fs-5" style="color:#D97706;"></i></div>
-          <small class="mt-2 fw-semibold">{{ tr('quotes') }}</small>
+          <small class="mt-2 fw-semibold">{{ tr('quotes') }} <span class="text-muted">({{ d.total_quotes }})</span></small>
         </div></a>
       </div>
       <div class="col-6"><a href="{{ url_for('invoices.list_invoices') }}" class="text-decoration-none">
         <div class="card border-0 shadow-sm text-center p-3">
           <div class="p-2 rounded-3 d-inline-block mx-auto" style="background:#7C3AED20;"><i class="bi bi-receipt fs-5" style="color:#7C3AED;"></i></div>
-          <small class="mt-2 fw-semibold">{{ tr('invoices') }}</small>
+          <small class="mt-2 fw-semibold">{{ tr('invoices') }} <span class="text-muted">({{ d.total_invoices }})</span></small>
         </div></a>
       </div>
       <div class="col-6"><a href="{{ url_for('delivery_notes.list_delivery_notes') }}" class="text-decoration-none">
         <div class="card border-0 shadow-sm text-center p-3">
           <div class="p-2 rounded-3 d-inline-block mx-auto" style="background:#2563EB20;"><i class="bi bi-truck fs-5" style="color:#2563EB;"></i></div>
-          <small class="mt-2 fw-semibold">Bons Livr.</small>
+          <small class="mt-2 fw-semibold">Bons Livr. <span class="text-muted">({{ d.total_delivery_notes }})</span></small>
         </div></a>
       </div>
       <div class="col-6"><a href="{{ url_for('payments.list_payments') }}" class="text-decoration-none">
         <div class="card border-0 shadow-sm text-center p-3">
           <div class="p-2 rounded-3 d-inline-block mx-auto" style="background:#05966920;"><i class="bi bi-credit-card fs-5" style="color:#059669;"></i></div>
-          <small class="mt-2 fw-semibold">{{ tr('payments') }}</small>
+          <small class="mt-2 fw-semibold">{{ tr('payments') }} <span class="text-muted">({{ d.total_payments }})</span></small>
         </div></a>
       </div>
     </div>
@@ -96,7 +96,7 @@
             <i class="bi {{ icons[loop.index0] }} fs-5" style="color:{{ colors[loop.index0] }};"></i>
           </div>
           <small class="text-muted mt-2">{{ [tr('stock_value'), tr('outstanding'), tr('overdue')][loop.index0] }}</small>
-          <strong class="fs-6">{{ currency }}{{ '%.0f'|format([d.stock_value, d.outstanding, d.overdue_amount][loop.index0]) }}</strong>
+          <strong class="fs-6">{{ '%.2f'|format([d.stock_value, d.outstanding, d.overdue_amount][loop.index0]) }} MAD</strong>
         </div>
       </div>
       {% endfor %}
@@ -113,7 +113,7 @@
             <i class="bi {{ icons[loop.index0] }} fs-5" style="color:{{ colors[loop.index0] }};"></i>
           </div>
           <small class="text-muted mt-2">{{ labels[loop.index0] }}</small>
-          <strong class="fs-6">{{ currency }}{{ '%.0f'|format(vals[loop.index0]) }}</strong>
+          <strong class="fs-6">{{ '%.2f'|format(vals[loop.index0]) }} MAD</strong>
         </div>
       </div>
       {% endfor %}
@@ -178,7 +178,7 @@
           <div class="d-flex align-items-center gap-2 mt-1 small">
             <span class="badge rounded-pill border border-secondary text-secondary">{{ loop.index }}</span>
             <span class="flex-grow-1">{{ c.name[:20] }}</span>
-            <strong>{{ currency }}{{ '%.0f'|format(c.revenue) }}</strong>
+            <strong>{{ '%.2f'|format(c.revenue) }} MAD</strong>
           </div>
           {% endfor %}
         </div>
@@ -201,7 +201,7 @@
           </div>
           <div class="d-flex justify-content-between mt-1 small">
             <span class="text-muted">{{ tr('quotes_month') }}: <strong class="text-dark">{{ d.quotes_month }}</strong></span>
-            <span class="text-muted">{{ tr('amount_month') }}: <strong style="color:#D97706;">{{ currency }}{{ '%.0f'|format(d.quotes_amount_month) }}</strong></span>
+            <span class="text-muted">{{ tr('amount_month') }}: <strong style="color:#D97706;">{{ '%.2f'|format(d.quotes_amount_month) }} MAD</strong></span>
           </div>
         </div>
       </div>
@@ -236,7 +236,7 @@
           {% set pct = [p.revenue / max_rev * 100, 100]|min %}
           <div class="mb-2">
             <div class="d-flex justify-content-between small">
-              <span>{{ p.product_name[:20] }}</span><strong>{{ currency }}{{ '%.0f'|format(p.revenue) }}</strong>
+              <span>{{ p.product_name[:20] }}</span><strong>{{ '%.2f'|format(p.revenue) }} MAD</strong>
             </div>
             <div class="progress" style="height:5px;">
               <div class="progress-bar" style="width:{{ pct }}%;background:#1B2A4A;" role="progressbar"></div>
@@ -260,7 +260,7 @@
                   <div class="progress-bar" style="width:{{ pct }}%;background:#C8A84E;" role="progressbar"></div>
                 </div>
               </div>
-              <strong style="width:70px;text-align:right;">{{ currency }}{{ '%.0f'|format(s.total) }}</strong>
+              <strong style="width:70px;text-align:right;">{{ '%.2f'|format(s.total) }} MAD</strong>
             </div>
           </div>
           {% endfor %}

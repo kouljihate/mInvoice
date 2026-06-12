@@ -50,13 +50,28 @@ def pay_invoice(id):
     db.close()
     return redirect(url_for('invoices.view_invoice', id=id))
 
-@invoices_bp.route('/invoices/<int:id>/status')
+@invoices_bp.route('/invoices/<int:id>/sent')
 @login_required
-def update_invoice_status(id):
-    status = request.args.get('status', 'draft')
+def mark_invoice_sent(id):
     db = get_db(invoices_bp)
-    db.update_invoice_status(id, status)
-    flash(f'Status updated to {status}', 'success')
+    db.update_invoice_status(id, "sent")
+    for pmt in db.get_payments(id):
+        db.conn.execute("UPDATE payments SET status='waiting' WHERE id=?", (pmt.id,))
+    db.conn.commit()
+    flash('Invoice marked as sent, payment set to waiting', 'success')
+    db.close()
+    return redirect(url_for('invoices.view_invoice', id=id))
+
+@invoices_bp.route('/invoices/<int:id>/paid')
+@login_required
+def mark_invoice_paid(id):
+    db = get_db(invoices_bp)
+    for pmt in db.get_payments(id):
+        if pmt.status == 'waiting':
+            db.conn.execute("UPDATE payments SET status='completed' WHERE id=?", (pmt.id,))
+    db.conn.commit()
+    db.recalc_invoice_status(id)
+    flash('Payment completed, invoice status updated', 'success')
     db.close()
     return redirect(url_for('invoices.view_invoice', id=id))
 
@@ -72,7 +87,7 @@ def delete_invoice(id):
 @invoices_bp.route('/invoices/<int:id>/pdf')
 @login_required
 def invoice_pdf(id):
-    from app.pdf_gen import generate_invoice_pdf
+    from app.be.services.pdf_service import generate_invoice_pdf
     from flask import send_file
     db = get_db(invoices_bp)
     invoice = db.get_invoice(id)

@@ -9,7 +9,7 @@ def invoices_view(page, navigate):
         if inv.pdf_path and os.path.exists(inv.pdf_path):
             os.startfile(inv.pdf_path)
         else:
-            page.snack_bar = ft.SnackBar(ft.Text(tr_static(page.session.store.get("lang", "en"), "no_pdf")))
+            page.snack_bar = ft.SnackBar(ft.Text(tr_static(page.session.store.get("lang") or "en", "no_pdf")))
             page.snack_bar.open = True
             page.update()
 
@@ -33,7 +33,7 @@ def invoices_view(page, navigate):
         docs = page.db.get_all_invoices()
         rows.controls.clear()
         if not docs:
-            rows.controls.append(ft.Text(tr_static(page.session.store.get("lang", "en"), "no_invoices"), color="#6B7280"))
+            rows.controls.append(ft.Text(tr_static(page.session.store.get("lang") or "en", "no_invoices"), color="#6B7280"))
         else:
             for inv in docs:
                 cname = page.db.get_customer(inv.customer_id).name if inv.customer_id else "N/A"
@@ -44,7 +44,7 @@ def invoices_view(page, navigate):
                             ft.Text(cname, size=12, color="#6B7280"),
                         ], expand=True, spacing=2),
                         ft.Column([
-                            ft.Text(f"{inv.total_ht:,.2f}", size=14, weight=ft.FontWeight.BOLD, color="#1A1A2E"),
+                            ft.Text(f"{inv.total_ht:,.2f} MAD", size=14, weight=ft.FontWeight.BOLD, color="#1A1A2E"),
                             status_badge(inv.status),
                         ], horizontal_alignment=ft.CrossAxisAlignment.END, spacing=4),
                         ft.Row([
@@ -77,7 +77,7 @@ def invoice_view_view(page, navigate, invoice_id):
 
     def gen_pdf(e):
         try:
-            from app.pdf_gen import generate_invoice_pdf
+            from app.be.services.pdf_service import generate_invoice_pdf
             company = page.db.get_company()
             items = page.db.get_invoice_items(invoice_id)
             payments = page.db.get_payments(invoice_id)
@@ -103,11 +103,9 @@ def invoice_view_view(page, navigate, invoice_id):
             from app.shared.models import Payment
             try:
                 new_amount = float(amount_f.value)
-                total_paid = paid_total + new_amount
-                new_status = "done" if total_paid >= inv.total_ht else "incomplete"
                 pmt = Payment(invoice_id=invoice_id, amount=new_amount,
                               date=date.today().isoformat(), method=method_f.value or "Cash",
-                              reference=ref_f.value, status=new_status)
+                              reference=ref_f.value, status="completed")
                 page.db.insert_payment(pmt)
                 page.db.recalc_invoice_status(invoice_id)
                 dlg.open = False; page.overlay.remove(dlg); page.update()
@@ -176,7 +174,7 @@ def invoice_view_view(page, navigate, invoice_id):
     for p in payments:
         pay_col.controls.append(ft.Row([
             ft.Text(f"{p.date[:10]}", size=12, color="#6B7280"),
-            ft.Text(f"{p.amount:,.2f}", size=13, weight=ft.FontWeight.BOLD, color="#059669"),
+            ft.Text(f"{p.amount:,.2f} MAD", size=13, weight=ft.FontWeight.BOLD, color="#059669"),
             ft.Text(p.method, size=12, color="#6B7280"),
             ft.IconButton(ft.Icons.DELETE, icon_color="#DC2626", icon_size=16,
                           on_click=lambda e, pid=p.id: (page.db.delete_payment(pid), page.db.recalc_invoice_status(invoice_id), navigate(f"/view_invoice/{invoice_id}"))),
@@ -192,7 +190,7 @@ def invoice_view_view(page, navigate, invoice_id):
                     content=ft.Column([
                         ft.Row([ft.Text("Customer:", weight=ft.FontWeight.BOLD, size=14, color="#374151"), ft.Text(cname, size=14, color="#374151")], spacing=8),
                         ft.Row([ft.Text("Status:", weight=ft.FontWeight.BOLD, size=14, color="#374151"), status_badge(inv.status)], spacing=8),
-                        ft.Row([ft.Text("Total:", weight=ft.FontWeight.BOLD, size=16, color=PRIMARY), ft.Text(f"{inv.total_ht:,.2f}", size=16, weight=ft.FontWeight.BOLD, color=PRIMARY)], spacing=8),
+                        ft.Row([ft.Text("Total:", weight=ft.FontWeight.BOLD, size=16, color=PRIMARY), ft.Text(f"{inv.total_ht:,.2f} MAD", size=16, weight=ft.FontWeight.BOLD, color=PRIMARY)], spacing=8),
                     ], spacing=8),
                     bgcolor=ft.Colors.WHITE, padding=20, border_radius=14,
                     shadow=ft.BoxShadow(blur_radius=6, color="rgba(0,0,0,0.04)", offset=ft.Offset(0, 2)),

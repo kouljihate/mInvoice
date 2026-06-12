@@ -1,6 +1,6 @@
 import sqlite3, os
 
-DB_DIR = os.path.join(os.path.dirname(__file__), "data", "db")
+DB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "db")
 dbs = [f for f in os.listdir(DB_DIR) if f.endswith(".db") and not f.endswith(".bak")]
 if not dbs:
     print("No database found in data/db/")

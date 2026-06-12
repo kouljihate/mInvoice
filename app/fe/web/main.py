@@ -13,6 +13,10 @@ def create_app():
 
     register_blueprints(app)
 
+    @app.route('/favicon.ico')
+    def favicon():
+        return '', 204
+
     @app.context_processor
     def inject_tr():
         lang = session.get('lang', 'en')

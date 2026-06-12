@@ -1,27 +1,36 @@
 {% extends 'base.html' %}
 {% block title %}{{ tr('payments') }}{% endblock %}
 {% block content %}
-{% set currency = (company.currency + ' ') if company else 'MAD ' %}
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h5 class="mb-0"><i class="bi bi-credit-card"></i> {{ tr('payments') }}</h5>
 </div>
-<div class="list-group">
-  {% for p in payments %}
-  <div class="list-group-item d-flex justify-content-between align-items-center">
-    <div>
-      <a href="{{ url_for('invoices.view_invoice', id=p.invoice_id) }}" class="text-decoration-none text-dark">
-        <strong>{{ currency }}{{ '%.2f'|format(p.amount) }}</strong><br>
-        <small class="text-muted">{{ tr('invoice') }} #{{ p.invoice_id }} &middot; {{ p.date }}</small>
-      </a>
-    </div>
-    <div class="text-end">
-      <span class="badge bg-light text-dark rounded-pill">{{ p.method }}</span>
-      <br>
-      <a href="{{ url_for('payments.delete_payment', id=p.id) }}" class="btn btn-outline-danger btn-sm mt-1" onclick="return confirm('Delete this payment?')"><i class="bi bi-trash"></i></a>
-    </div>
-  </div>
-  {% else %}
-  <div class="text-center text-muted py-4">{{ tr('no_payments') }}</div>
-  {% endfor %}
+<div class="table-responsive">
+  <table class="table table-sm table-hover">
+    <thead>
+      <tr>
+        <th>{{ tr('payment_number') if tr('payment_number') != 'payment_number' else 'Number' }}</th>
+        <th>{{ tr('date') }}</th>
+        <th>{{ tr('amount') if tr('amount') != 'amount' else 'Amount' }}</th>
+        <th>{{ tr('type') if tr('type') != 'type' else 'Type' }}</th>
+        <th>{{ tr('status_label') if tr('status_label') != 'status_label' else 'Status' }}</th>
+        <th>{{ tr('action') if tr('action') != 'action' else 'Action' }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in payments %}
+      <tr class="align-middle">
+        <td><a href="{{ url_for('invoices.view_invoice', id=p.invoice_id) }}" class="text-decoration-none">{{ p.payment_number }}</a></td>
+        <td>{{ p.date }}</td>
+        <td>{{ '%.2f'|format(p.amount) }} MAD</td>
+        <td><span class="badge bg-light text-dark rounded-pill">{{ p.method }}</span></td>
+        <td><span class="badge {% if p.status == 'completed' or p.status == 'done' %}bg-success{% elif p.status == 'waiting' %}bg-info{% elif p.status == 'draft' %}bg-secondary{% else %}bg-primary{% endif %}">{{ tr('status_' + p.status) if tr('status_' + p.status) != 'status_' + p.status else p.status }}</span></td>
+        <td class="text-center"><a href="{{ url_for('payments.edit_payment', id=p.id) }}" class="btn btn-sm btn-outline-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width:32px;height:32px;padding:0" title="{{ tr('edit') if tr('edit') != 'edit' else 'Edit' }}"><i class="bi bi-pencil"></i></a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-muted py-4">{{ tr('no_payments') }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endblock %}

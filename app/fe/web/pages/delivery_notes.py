@@ -29,7 +29,7 @@ def view_delivery_note(id):
 @delivery_notes_bp.route('/delivery_notes/<int:id>/pdf')
 @login_required
 def dn_pdf(id):
-    from app.pdf_gen import generate_dn_pdf
+    from app.be.services.pdf_service import generate_dn_pdf
     db = get_db(delivery_notes_bp)
     dn = db.get_delivery_note(id)
     items = db.get_quote_items(dn.quote_id) if dn and dn.quote_id else []
@@ -49,6 +49,27 @@ def list_payments():
     lang = session.get('lang', 'en')
     db.close()
     return render_template('payments/list.html', payments=payments, company=company, lang=lang, tr=lambda k: tr(lang, k))
+
+@payments_bp.route('/payments/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_payment(id):
+    db = get_db(payments_bp)
+    payment = db.get_payment_by_id(id)
+    if not payment:
+        db.close()
+        return redirect(url_for('payments.list_payments'))
+    company = db.get_company()
+    lang = session.get('lang', 'en')
+    currency = (company.currency + ' ') if company else 'MAD '
+    if request.method == 'POST':
+        new_status = request.form.get('status', 'draft')
+        db.conn.execute("UPDATE payments SET status=? WHERE id=?", (new_status, id))
+        db.conn.commit()
+        db.recalc_invoice_status(payment.invoice_id)
+        db.close()
+        return redirect(url_for('payments.list_payments'))
+    db.close()
+    return render_template('payments/form.html', payment=payment, company=company, lang=lang, currency=currency, tr=lambda k: tr(lang, k))
 
 @payments_bp.route('/payments/<int:id>/delete')
 @login_required

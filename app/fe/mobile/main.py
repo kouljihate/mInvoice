@@ -14,7 +14,7 @@ from app.fe.mobile.screens.payments_screen import payments_view
 
 
 def main(page: ft.Page):
-    page.title = "mInvoice"
+    page.title = "Mobile Invoice"
     page.theme_mode = ft.ThemeMode.LIGHT
     apply_theme(page)
     page.db = Database()

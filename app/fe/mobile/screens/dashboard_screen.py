@@ -5,7 +5,7 @@ from app.shared.utils import tr_static
 
 def dashboard_view(page, navigate):
     company = page.db.get_company()
-    currency = (company.currency + " ") if company else "MAD "
+
     d = page.db.get_dashboard_data()
 
     def logout(e):
@@ -98,23 +98,23 @@ def dashboard_view(page, navigate):
         ], spacing=4)
 
     rows_data = [
-        (tr_static(page.session.store.get("lang", "en"), "sales_month"), f"{currency}{d['sales_month']:,.0f}", ft.Icons.TRENDING_UP, "#2563EB", "/payments"),
-        (tr_static(page.session.store.get("lang", "en"), "invoiced_month"), f"{currency}{d['invoiced_month']:,.0f}", ft.Icons.RECEIPT, "#7C3AED", "/invoices"),
-        (tr_static(page.session.store.get("lang", "en"), "paid_month"), f"{currency}{d['paid_month']:,.0f}", ft.Icons.CHECK_CIRCLE, "#059669", "/payments"),
-        (tr_static(page.session.store.get("lang", "en"), "outstanding"), f"{currency}{d['outstanding']:,.0f}", ft.Icons.HOURGLASS_EMPTY, "#D97706", "/invoices"),
-        (tr_static(page.session.store.get("lang", "en"), "overdue"), f"{d['overdue_count']} ({currency}{d['overdue_amount']:,.0f})", ft.Icons.WARNING_AMBER, "#DC2626", "/invoices"),
-        (tr_static(page.session.store.get("lang", "en"), "stock_value"), f"{currency}{d['stock_value']:,.0f}", ft.Icons.INVENTORY, "#0891B2", "/products"),
-        (tr_static(page.session.store.get("lang", "en"), "low_stock"), str(d['low_stock']), ft.Icons.ERROR_OUTLINE, "#F59E0B", "/products"),
-        (tr_static(page.session.store.get("lang", "en"), "new_customers"), str(d['new_customers']), ft.Icons.PERSON_ADD, "#0D9488", "/customers"),
+        (tr_static(page.session.store.get("lang") or "en", "sales_month"), f"{d['sales_month']:,.2f} MAD", ft.Icons.TRENDING_UP, "#2563EB", "/payments"),
+        (tr_static(page.session.store.get("lang") or "en", "invoiced_month"), f"{d['invoiced_month']:,.2f} MAD", ft.Icons.RECEIPT, "#7C3AED", "/invoices"),
+        (tr_static(page.session.store.get("lang") or "en", "paid_month"), f"{d['paid_month']:,.2f} MAD", ft.Icons.CHECK_CIRCLE, "#059669", "/payments"),
+        (tr_static(page.session.store.get("lang") or "en", "outstanding"), f"{d['outstanding']:,.2f} MAD", ft.Icons.HOURGLASS_EMPTY, "#D97706", "/invoices"),
+        (tr_static(page.session.store.get("lang") or "en", "overdue"), f"{d['overdue_count']} ({d['overdue_amount']:,.2f} MAD)", ft.Icons.WARNING_AMBER, "#DC2626", "/invoices"),
+        (tr_static(page.session.store.get("lang") or "en", "stock_value"), f"{d['stock_value']:,.2f} MAD", ft.Icons.INVENTORY, "#0891B2", "/products"),
+        (tr_static(page.session.store.get("lang") or "en", "low_stock"), str(d['low_stock']), ft.Icons.ERROR_OUTLINE, "#F59E0B", "/products"),
+        (tr_static(page.session.store.get("lang") or "en", "new_customers"), str(d['new_customers']), ft.Icons.PERSON_ADD, "#0D9488", "/customers"),
     ]
 
     status_bars = ft.Column(spacing=2)
     inv_total = max(d['total_invoices'], 1)
     for label, val, clr in [
-        (tr_static(page.session.store.get("lang", "en"), "draft_invoices"), d['draft_inv'], "#94A3B8"),
-        (tr_static(page.session.store.get("lang", "en"), "sent_invoices"), d['sent_inv'], "#3B82F6"),
-        (tr_static(page.session.store.get("lang", "en"), "partial_invoices"), d['partial_inv'], WARNING),
-        (tr_static(page.session.store.get("lang", "en"), "paid_invoices"), d['paid_inv'], SUCCESS),
+        (tr_static(page.session.store.get("lang") or "en", "draft_invoices"), d['draft_inv'], "#94A3B8"),
+        (tr_static(page.session.store.get("lang") or "en", "sent_invoices"), d['sent_inv'], "#3B82F6"),
+        (tr_static(page.session.store.get("lang") or "en", "partial_invoices"), d['partial_inv'], WARNING),
+        (tr_static(page.session.store.get("lang") or "en", "paid_invoices"), d['paid_inv'], SUCCESS),
     ]:
         pct = min(val / inv_total * 100, 100)
         status_bars.controls.append(ft.Column([
@@ -136,7 +136,7 @@ def dashboard_view(page, navigate):
         top_prod_bars.controls.append(ft.Column([
             ft.Row([
                 ft.Text(p['product_name'][:20], size=12, color="#475569", expand=True),
-                ft.Text(f"{currency}{p['revenue']:,.0f}", size=12, weight=ft.FontWeight.BOLD, color="#1E293B"),
+                ft.Text(f"{p['revenue']:,.2f} MAD", size=12, weight=ft.FontWeight.BOLD, color="#1E293B"),
             ], spacing=4),
             ft.Stack([
                 ft.Container(height=5, bgcolor="#F1F5F9", border_radius=3),
@@ -158,7 +158,7 @@ def dashboard_view(page, navigate):
                     ft.Container(height=5, bgcolor="#F1F5F9", border_radius=3, expand=True),
                     ft.Container(height=5, width=pct * 2.5, bgcolor=SECONDARY, border_radius=3),
                 ], expand=True),
-                ft.Text(f"{currency}{s['total']:,.0f}", size=11, weight=ft.FontWeight.BOLD, color="#1E293B", width=70, text_align=ft.TextAlign.RIGHT),
+                ft.Text(f"{s['total']:,.2f} MAD", size=11, weight=ft.FontWeight.BOLD, color="#1E293B", width=70, text_align=ft.TextAlign.RIGHT),
             ], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER),
         ], spacing=3))
         sales_bars.controls.append(ft.Container(height=4))
@@ -193,7 +193,7 @@ def dashboard_view(page, navigate):
                         border=border_all(1.5, SECONDARY), border_radius=6,
                     ),
                     ft.Text(c['name'][:20], size=13, color="#475569", expand=True),
-                    ft.Text(f"{currency}{c['revenue']:,.0f}", size=13, weight=ft.FontWeight.BOLD, color="#1E293B"),
+                    ft.Text(f"{c['revenue']:,.2f} MAD", size=13, weight=ft.FontWeight.BOLD, color="#1E293B"),
                 ], spacing=10, vertical_alignment=ft.CrossAxisAlignment.CENTER),
                 padding=8, bgcolor="#F8FAFC", border_radius=8,
             )
@@ -212,12 +212,12 @@ def dashboard_view(page, navigate):
                                 content=ft.Icon(ft.Icons.RECEIPT, size=20, color=ft.Colors.WHITE),
                                 bgcolor="rgba(255,255,255,0.15)", padding=8, border_radius=10,
                             ),
-                            ft.Text("mInvoice", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                            ft.Text("Mobile Invoice", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
                         ], spacing=10, vertical_alignment=ft.CrossAxisAlignment.CENTER),
                         ft.Container(height=4),
                         ft.Row([
                             ft.Icon(ft.Icons.STORE, size=13, color="rgba(255,255,255,0.7)"),
-                            ft.Text(company.name if company else tr_static(page.session.store.get("lang", "en"), "my_company"), size=13, color="rgba(255,255,255,0.85)"),
+                            ft.Text(company.name if company else tr_static(page.session.store.get("lang") or "en", "my_company"), size=13, color="rgba(255,255,255,0.85)"),
                         ], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER),
                     ], expand=True, spacing=0),
                     ft.Row([
@@ -232,15 +232,15 @@ def dashboard_view(page, navigate):
                 ft.Row([
                     ft.Container(
                         content=ft.Column([
-                            ft.Text(tr_static(page.session.store.get("lang", "en"), "revenue"), size=11, color="rgba(255,255,255,0.6)"),
-                            ft.Text(f"{currency}{d['sales_month']:,.0f}", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
+                            ft.Text(tr_static(page.session.store.get("lang") or "en", "revenue"), size=11, color="rgba(255,255,255,0.6)"),
+                            ft.Text(f"{d['sales_month']:,.2f} MAD", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
                         ], spacing=0),
                         expand=True,
                     ),
                     ft.Container(
                         content=ft.Column([
-                            ft.Text(tr_static(page.session.store.get("lang", "en"), "outstanding"), size=11, color="rgba(255,255,255,0.6)", text_align=ft.TextAlign.RIGHT),
-                            ft.Text(f"{currency}{d['outstanding']:,.0f}", size=22, weight=ft.FontWeight.BOLD, color="#FBBF24"),
+                            ft.Text(tr_static(page.session.store.get("lang") or "en", "outstanding"), size=11, color="rgba(255,255,255,0.6)", text_align=ft.TextAlign.RIGHT),
+                            ft.Text(f"{d['outstanding']:,.2f} MAD", size=22, weight=ft.FontWeight.BOLD, color="#FBBF24"),
                         ], spacing=0, horizontal_alignment=ft.CrossAxisAlignment.END),
                     ),
                 ]),
@@ -262,10 +262,10 @@ def dashboard_view(page, navigate):
                     unselected_label_color="#94A3B8",
                     indicator_color=PRIMARY,
                     tabs=[
-                        ft.Tab(label=tr_static(page.session.store.get("lang", "en"), "tab_main")),
-                        ft.Tab(label=tr_static(page.session.store.get("lang", "en"), "tab_kpi")),
-                        ft.Tab(label=tr_static(page.session.store.get("lang", "en"), "tab_signals")),
-                        ft.Tab(label=tr_static(page.session.store.get("lang", "en"), "tab_products")),
+                        ft.Tab(label=tr_static(page.session.store.get("lang") or "en", "tab_main")),
+                        ft.Tab(label=tr_static(page.session.store.get("lang") or "en", "tab_kpi")),
+                        ft.Tab(label=tr_static(page.session.store.get("lang") or "en", "tab_signals")),
+                        ft.Tab(label=tr_static(page.session.store.get("lang") or "en", "tab_products")),
                     ],
                 ),
                 ft.TabBarView(
@@ -275,18 +275,18 @@ def dashboard_view(page, navigate):
                             content=ft.Column([
                                 ft.Container(height=6),
                                 ft.Row([
-                                    nav_card(tr_static(page.session.store.get("lang", "en"), "customers"), ft.Icons.PEOPLE, "#059669", "/customers"),
-                                    nav_card(tr_static(page.session.store.get("lang", "en"), "products"), ft.Icons.INVENTORY_2, "#0891B2", "/products"),
+                                    nav_card(tr_static(page.session.store.get("lang") or "en", "customers") + f" ({d['total_customers']})", ft.Icons.PEOPLE, "#059669", "/customers"),
+                                    nav_card(tr_static(page.session.store.get("lang") or "en", "products") + f" ({d['total_products']})", ft.Icons.INVENTORY_2, "#0891B2", "/products"),
                                 ], spacing=10),
                                 ft.Container(height=12),
                                 ft.Row([
-                                    nav_card(tr_static(page.session.store.get("lang", "en"), "new_quote"), ft.Icons.ADD, "#D97706", "/quotes"),
-                                    nav_card(tr_static(page.session.store.get("lang", "en"), "invoices"), ft.Icons.RECEIPT, "#7C3AED", "/invoices"),
+                                    nav_card(tr_static(page.session.store.get("lang") or "en", "quotes") + f" ({d['total_quotes']})", ft.Icons.DESCRIPTION, "#D97706", "/quotes"),
+                                    nav_card(tr_static(page.session.store.get("lang") or "en", "invoices") + f" ({d['total_invoices']})", ft.Icons.RECEIPT, "#7C3AED", "/invoices"),
                                 ], spacing=10),
                                 ft.Container(height=8),
                                 ft.Row([
-                                    nav_card("Bons Livr.", ft.Icons.LOCAL_SHIPPING, "#2563EB", "/delivery_notes"),
-                                    nav_card(tr_static(page.session.store.get("lang", "en"), "payments"), ft.Icons.PAYMENTS, "#059669", "/payments"),
+                                    nav_card(f"Bons Livr. ({d['total_delivery_notes']})", ft.Icons.LOCAL_SHIPPING, "#2563EB", "/delivery_notes"),
+                                    nav_card(tr_static(page.session.store.get("lang") or "en", "payments") + f" ({d['total_payments']})", ft.Icons.PAYMENTS, "#059669", "/payments"),
                                 ], spacing=10),
                             ], spacing=0, scroll=ft.ScrollMode.AUTO),
                             padding=ft.Padding(left=16, right=16, top=0, bottom=16), expand=True,
@@ -306,7 +306,7 @@ def dashboard_view(page, navigate):
                                     kpi_card(*rows_data[0]),
                                 ], spacing=8),
                                 ft.Container(height=12),
-                                section_card(tr_static(page.session.store.get("lang", "en"), "invoices_status"), ft.Icons.RECEIPT, "#7C3AED",
+                                section_card(tr_static(page.session.store.get("lang") or "en", "invoices_status"), ft.Icons.RECEIPT, "#7C3AED",
                                     status_bars,
                                 ),
                             ], spacing=0, scroll=ft.ScrollMode.AUTO),
@@ -316,69 +316,69 @@ def dashboard_view(page, navigate):
                             content=ft.Column([
                                 ft.Container(height=6),
                                 ft.Row([
-                                    section_card(tr_static(page.session.store.get("lang", "en"), "stock_signals"), ft.Icons.INVENTORY_2, "#0891B2",
+                                    section_card(tr_static(page.session.store.get("lang") or "en", "stock_signals"), ft.Icons.INVENTORY_2, "#0891B2",
                                         ft.Row([
-                                            signal_item(tr_static(page.session.store.get("lang", "en"), "low_stock_items"), d['low_stock'], WARNING),
+                                            signal_item(tr_static(page.session.store.get("lang") or "en", "low_stock_items"), d['low_stock'], WARNING),
                                         ]),
                                         ft.Row([
-                                            signal_item(tr_static(page.session.store.get("lang", "en"), "out_of_stock"), d['out_of_stock'], ERROR),
+                                            signal_item(tr_static(page.session.store.get("lang") or "en", "out_of_stock"), d['out_of_stock'], ERROR),
                                         ]),
                                         ft.Container(height=6),
-                                        ft.Row([signal_item(tr_static(page.session.store.get("lang", "en"), "below_reorder"), d['below_reorder'], "#F59E0B")]),
+                                        ft.Row([signal_item(tr_static(page.session.store.get("lang") or "en", "below_reorder"), d['below_reorder'], "#F59E0B")]),
                                         ft.Container(height=8),
-                                        ft.Text(tr_static(page.session.store.get("lang", "en"), "top_selling"), size=11, weight=ft.FontWeight.BOLD, color="#94A3B8", height=14),
+                                        ft.Text(tr_static(page.session.store.get("lang") or "en", "top_selling"), size=11, weight=ft.FontWeight.BOLD, color="#94A3B8", height=14),
                                         ft.Container(height=4),
                                         top_selling_col,
                                     ),
-                                    section_card(tr_static(page.session.store.get("lang", "en"), "customer_signals"), ft.Icons.PEOPLE, "#059669",
+                                    section_card(tr_static(page.session.store.get("lang") or "en", "customer_signals"), ft.Icons.PEOPLE, "#059669",
                                         ft.Row([
-                                            signal_item(tr_static(page.session.store.get("lang", "en"), "active_customers"), d['active_customers'], SUCCESS),
-                                            signal_item(tr_static(page.session.store.get("lang", "en"), "overdue_customers"), d['overdue_customers'], ERROR),
+                                            signal_item(tr_static(page.session.store.get("lang") or "en", "active_customers"), d['active_customers'], SUCCESS),
+                                            signal_item(tr_static(page.session.store.get("lang") or "en", "overdue_customers"), d['overdue_customers'], ERROR),
                                         ], spacing=8),
                                         ft.Container(height=6),
-                                        ft.Row([signal_item(tr_static(page.session.store.get("lang", "en"), "total_customers"), d['total_customers'], "#3B82F6")]),
+                                        ft.Row([signal_item(tr_static(page.session.store.get("lang") or "en", "total_customers"), d['total_customers'], "#3B82F6")]),
                                         ft.Container(height=8),
-                                        ft.Text(tr_static(page.session.store.get("lang", "en"), "top_customers"), size=11, weight=ft.FontWeight.BOLD, color="#94A3B8", height=14),
+                                        ft.Text(tr_static(page.session.store.get("lang") or "en", "top_customers"), size=11, weight=ft.FontWeight.BOLD, color="#94A3B8", height=14),
                                         ft.Container(height=4),
                                         top_cust_col,
                                     ),
                                 ], spacing=10),
                                 ft.Container(height=8),
                                 ft.Row([
-                                    section_card(tr_static(page.session.store.get("lang", "en"), "quote_signals"), ft.Icons.DESCRIPTION, "#D97706",
+                                    section_card(tr_static(page.session.store.get("lang") or "en", "quote_signals"), ft.Icons.DESCRIPTION, "#D97706",
                                         ft.Row([
-                                            signal_item(tr_static(page.session.store.get("lang", "en"), "draft_quotes"), d['draft_quotes'], "#94A3B8"),
-                                            signal_item(tr_static(page.session.store.get("lang", "en"), "validated_quotes"), d['validated_quotes'], SUCCESS),
+                                            signal_item(tr_static(page.session.store.get("lang") or "en", "draft_quotes"), d['draft_quotes'], "#94A3B8"),
+                                            signal_item(tr_static(page.session.store.get("lang") or "en", "validated_quotes"), d['validated_quotes'], SUCCESS),
                                         ], spacing=8),
                                         ft.Container(height=4),
                                         ft.Row([
-                                            signal_item(tr_static(page.session.store.get("lang", "en"), "sent_quotes"), d['sent_quotes'], "#3B82F6"),
-                                            signal_item(tr_static(page.session.store.get("lang", "en"), "confirmed_quotes"), d['confirmed_quotes'], "#7C3AED"),
+                                            signal_item(tr_static(page.session.store.get("lang") or "en", "sent_quotes"), d['sent_quotes'], "#3B82F6"),
+                                            signal_item(tr_static(page.session.store.get("lang") or "en", "confirmed_quotes"), d['confirmed_quotes'], "#7C3AED"),
                                         ], spacing=8),
                                         ft.Container(height=6),
                                         ft.Row([
                                             ft.Column([
-                                                ft.Text(tr_static(page.session.store.get("lang", "en"), "quotes_month"), size=10, color="#94A3B8"),
+                                                ft.Text(tr_static(page.session.store.get("lang") or "en", "quotes_month"), size=10, color="#94A3B8"),
                                                 ft.Text(str(d['quotes_month']), size=14, weight=ft.FontWeight.BOLD, color="#1E293B"),
                                             ], spacing=1, expand=True),
                                             ft.Column([
-                                                ft.Text(tr_static(page.session.store.get("lang", "en"), "amount_month"), size=10, color="#94A3B8", text_align=ft.TextAlign.RIGHT),
-                                                ft.Text(f"{currency}{d['quotes_amount_month']:,.0f}", size=14, weight=ft.FontWeight.BOLD, color="#D97706"),
+                                                ft.Text(tr_static(page.session.store.get("lang") or "en", "amount_month"), size=10, color="#94A3B8", text_align=ft.TextAlign.RIGHT),
+                                                ft.Text(f"{d['quotes_amount_month']:,.2f} MAD", size=14, weight=ft.FontWeight.BOLD, color="#D97706"),
                                             ], spacing=1, horizontal_alignment=ft.CrossAxisAlignment.END),
                                         ]),
                                     ),
-                                    section_card(tr_static(page.session.store.get("lang", "en"), "invoice_signals"), ft.Icons.RECEIPT, "#7C3AED",
+                                    section_card(tr_static(page.session.store.get("lang") or "en", "invoice_signals"), ft.Icons.RECEIPT, "#7C3AED",
                                         ft.Row([
-                                            signal_item(tr_static(page.session.store.get("lang", "en"), "draft_invoices"), d['draft_inv'], "#94A3B8"),
-                                            signal_item(tr_static(page.session.store.get("lang", "en"), "sent_invoices"), d['sent_inv'], "#3B82F6"),
+                                            signal_item(tr_static(page.session.store.get("lang") or "en", "draft_invoices"), d['draft_inv'], "#94A3B8"),
+                                            signal_item(tr_static(page.session.store.get("lang") or "en", "sent_invoices"), d['sent_inv'], "#3B82F6"),
                                         ], spacing=8),
                                         ft.Container(height=4),
                                         ft.Row([
-                                            signal_item(tr_static(page.session.store.get("lang", "en"), "partial_invoices"), d['partial_inv'], WARNING),
-                                            signal_item(tr_static(page.session.store.get("lang", "en"), "paid_invoices"), d['paid_inv'], SUCCESS),
+                                            signal_item(tr_static(page.session.store.get("lang") or "en", "partial_invoices"), d['partial_inv'], WARNING),
+                                            signal_item(tr_static(page.session.store.get("lang") or "en", "paid_invoices"), d['paid_inv'], SUCCESS),
                                         ], spacing=8),
                                         ft.Container(height=4),
-                                        ft.Row([signal_item(tr_static(page.session.store.get("lang", "en"), "overdue_invoices"), d['overdue_count'], ERROR)]),
+                                        ft.Row([signal_item(tr_static(page.session.store.get("lang") or "en", "overdue_invoices"), d['overdue_count'], ERROR)]),
                                     ),
                                 ], spacing=10),
                             ], spacing=0, scroll=ft.ScrollMode.AUTO),
@@ -388,10 +388,10 @@ def dashboard_view(page, navigate):
                             content=ft.Column([
                                 ft.Container(height=6),
                                 ft.Row([
-                                    section_card(tr_static(page.session.store.get("lang", "en"), "top_products"), ft.Icons.INVENTORY, PRIMARY,
+                                    section_card(tr_static(page.session.store.get("lang") or "en", "top_products"), ft.Icons.INVENTORY, PRIMARY,
                                         top_prod_bars,
                                     ),
-                                    section_card(tr_static(page.session.store.get("lang", "en"), "sales_trend"), ft.Icons.SHOW_CHART, SECONDARY,
+                                    section_card(tr_static(page.session.store.get("lang") or "en", "sales_trend"), ft.Icons.SHOW_CHART, SECONDARY,
                                         sales_bars,
                                     ),
                                 ], spacing=10),

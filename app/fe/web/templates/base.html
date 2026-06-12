@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>mInvoice - {% block title %}Dashboard{% endblock %}</title>
+  <title>Web Invoice - {% block title %}Dashboard{% endblock %}</title>
   <link href="{{ url_for('static', filename='css/fonts.css') }}" rel="stylesheet">
-  <link href="{{ url_for('static', filename='css/themes/morph.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/themes/journal.min.css') }}" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
@@ -13,9 +13,9 @@
 </head>
 <body>
   {% if session.user_id %}
-  <nav class="navbar navbar-expand-lg navbar-dark" style="background:#378dfc;">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary border-bottom border-light">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#"><i class="bi bi-receipt"></i> mInvoice</a>
+      <a class="navbar-brand" href="#"><i class="bi bi-receipt"></i> Web Invoice</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -35,7 +35,7 @@
     </div>
   </nav>
   {% endif %}
-  <div class="container-fluid py-3">
+  <div class="container py-5">
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
     {% for category, message in messages %}

@@ -40,10 +40,12 @@ def _try_add_fonts(pdf):
 
 
 def _use_font(pdf, style="", size=10):
+    style_map = {"normal": "", "bold": "B", "italic": "I", "underline": "U"}
+    mapped = style_map.get(style.lower() if style else "", style)
     if hasattr(pdf, "_comfortaa_loaded") and pdf._comfortaa_loaded:
-        pdf.set_font("Comfortaa", style, size)
+        pdf.set_font("Comfortaa", mapped, size)
     else:
-        pdf.set_font("Helvetica", style, size)
+        pdf.set_font("Helvetica", mapped, size)
 
 
 class DocTemplate:
@@ -320,56 +322,274 @@ def _render_section(pdf, section, company=None, customer=None, invoice=None, ite
     return pdf.get_y()
 
 
+def _nombre_en_lettres(n):
+    if n == 0:
+        return "zéro"
+    units = ["", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf",
+             "dix", "onze", "douze", "treize", "quatorze", "quinze", "seize",
+             "dix-sept", "dix-huit", "dix-neuf"]
+    tens = ["", "", "vingt", "trente", "quarante", "cinquante", "soixante",
+            "soixante-dix", "quatre-vingt", "quatre-vingt-dix"]
+    def _lt1000(num):
+        parts = []
+        if num >= 100:
+            h = num // 100
+            parts.append("cent" if h == 1 else f"{units[h]}-cent")
+            num %= 100
+        if num >= 20:
+            t = num // 10
+            u = num % 10
+            if t < 7 or t == 8:
+                base = tens[t]
+                if u == 0:
+                    parts.append("quatre-vingts" if t == 8 else base)
+                elif u == 1:
+                    parts.append(f"{base}-et-un" if t > 1 else "onze")
+                else:
+                    parts.append(f"{base}-{units[u]}")
+            elif t == 7:
+                parts.append(f"soixante-{units[10 + u]}" if u > 0 else "soixante-dix")
+            elif t == 9:
+                parts.append(f"quatre-vingt-{units[10 + u]}")
+        elif num > 0:
+            parts.append(units[num])
+        return "-".join(parts).replace("--", "-")
+    if n >= 1000000:
+        m = n // 1000000
+        r = n % 1000000
+        s = "un million" if m == 1 else f"{_lt1000(m)} millions"
+        return s + (f" {_nombre_en_lettres(r)}" if r > 0 else "")
+    if n >= 1000:
+        th = n // 1000
+        r = n % 1000
+        s = "mille" if th == 1 else f"{_lt1000(th)} mille"
+        return s + (f" {_lt1000(r)}" if r > 0 else "")
+    return _lt1000(n)
+
+
 def generate_invoice_pdf(company, invoice, items, payments=None, total_paid=0, db=None):
     ensure_pdf_dir()
-    from app.database import DEFAULT_INVOICE_SECTIONS
 
-    pdf = FPDF()
+    pdf = FPDF(orientation="P", unit="mm", format="A4")
     pdf._comfortaa_loaded = _try_add_fonts(pdf)
     pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
+
+    A4_H = 297
+    margin = 15
+    footer_margin = 42
+    pdf.set_auto_page_break(auto=True, margin=footer_margin)
+    pdf.set_left_margin(margin)
+    pdf.set_right_margin(margin)
+    page_w = pdf.w - margin * 2
 
     customer = None
     if invoice.customer_id and db:
         customer = db.get_customer(invoice.customer_id)
 
-    sections = None
-    if db:
-        sections = db.get_template_sections("invoice")
+    header_end_y = 15 + (A4_H - 30) * 0.20
+    footer_start_y = 15 + (A4_H - 30) * 0.90
 
-    if not sections:
-        from app.database import TemplateSection
-        sections = []
-        for key, name, group, pos, ctype, fields, text, fsize, fstyle, align in DEFAULT_INVOICE_SECTIONS:
-            sections.append(TemplateSection(
-                doc_type="invoice", section_key=key, section_name=name,
-                parent_group=group, position=pos, is_visible=True,
-                content_type=ctype, fields_config=fields, custom_text=text,
-                font_size=fsize, font_style=fstyle, text_align=align,
-            ))
+    # ═══════════════════════════════════════════
+    # 1. HEADER (top 20%)
+    # ═══════════════════════════════════════════
 
-    note1 = ""
-    note2 = ""
-    if invoice.notes:
-        parts = invoice.notes.split("\n---\n", 1)
-        note1 = parts[0]
-        if len(parts) > 1:
-            note2 = parts[1]
+    top_y = 10
 
-    for sec in sections:
-        _render_section(pdf, sec, company, customer, invoice, items, note1, note2)
+    # 1.1 Left: Logo + slogan only
+    if company and company.logo_path and os.path.exists(company.logo_path):
+        try:
+            pdf.image(company.logo_path, x=margin, y=top_y, w=35)
+        except Exception:
+            pass
 
-    if payments:
-        pdf.ln(6)
-        _use_font(pdf, "B", 10)
-        pdf.cell(0, 7, "Payment History:", new_x="LMARGIN", new_y="NEXT")
+    slogan = company.slogan if company and company.slogan else (company.website if company else "")
+    if slogan:
         _use_font(pdf, "", 9)
-        for p in payments:
-            pdf.cell(0, 6, f"{p.date} - {p.amount:.2f} ({p.method})", new_x="LMARGIN", new_y="NEXT")
-        _use_font(pdf, "B", 10)
-        pdf.cell(0, 7, f"Total Paid: {total_paid:.2f}", new_x="LMARGIN", new_y="NEXT")
-        balance = invoice.total_ttc - total_paid
-        pdf.cell(0, 7, f"Balance Due: {balance:.2f}", new_x="LMARGIN", new_y="NEXT")
+        pdf.set_xy(margin, top_y + 38)
+        pdf.cell(page_w * 0.48, 5, slogan, align="L")
+
+    # 1.2 Right: Customer info
+    right_col_x = margin + page_w * 0.5
+    right_col_w = page_w * 0.48
+
+    if customer:
+        _use_font(pdf, "B", 11)
+        pdf.set_xy(right_col_x, top_y + 8)
+        pdf.cell(right_col_w, 6, customer.name, align="R")
+
+        cr_y = top_y + 16
+        _use_font(pdf, "", 8)
+        if customer.address:
+            pdf.set_xy(right_col_x, cr_y)
+            pdf.cell(right_col_w, 4, customer.address, align="R")
+            cr_y += 4
+        if customer.customer_type == "company":
+            if hasattr(customer, "ice") and customer.ice:
+                pdf.set_xy(right_col_x, cr_y)
+                pdf.cell(right_col_w, 4, f"ICE: {customer.ice}", align="R")
+                cr_y += 4
+        else:
+            if customer.email:
+                pdf.set_xy(right_col_x, cr_y)
+                pdf.cell(right_col_w, 4, customer.email, align="R")
+
+    pdf.set_y(header_end_y)
+
+    sy = pdf.get_y()
+    pdf.set_draw_color(200, 200, 200)
+    pdf.line(margin, sy, margin + page_w, sy)
+    pdf.ln(6)
+
+    # ═══════════════════════════════════════════
+    # 2. BODY (middle 70%)
+    # ═══════════════════════════════════════════
+
+    # 2.1 Invoice number + date at left
+    _use_font(pdf, "B", 14)
+    pdf.cell(0, 8, f"INVOICE {invoice.invoice_number}", new_x="LMARGIN", new_y="NEXT", align="L")
+    _use_font(pdf, "", 9)
+    pdf.cell(0, 5, f"Date: {invoice.date}", new_x="LMARGIN", new_y="NEXT", align="L")
+    if invoice.due_date:
+        pdf.cell(0, 5, f"Due Date: {invoice.due_date}", new_x="LMARGIN", new_y="NEXT", align="L")
+
+    # 2.2 Attention To (same area, on same row as invoice)
+    if customer:
+        attn_x = margin + page_w * 0.5
+        contact = customer.name
+        _use_font(pdf, "B", 9)
+        pdf.set_xy(attn_x, pdf.get_y() - 18)
+        pdf.cell(page_w * 0.48, 5, f"Attention To: {contact}", align="R")
+        pdf.set_y(pdf.get_y() + 18)
+
+    pdf.ln(4)
+
+    # 2.3 Items table
+    col_ref = 18
+    col_desig = 60
+    col_qty = 14
+    col_price = 24
+    col_pkg = 22
+    col_total = page_w - col_ref - col_desig - col_qty - col_price - col_pkg
+    col_widths = [col_ref, col_desig, col_qty, col_price, col_pkg, col_total]
+    headers = ["Ref", "Designation", "Qty", "Unit Price", "Pkg Size", "Total HT"]
+
+    _use_font(pdf, "B", 8)
+    pdf.set_fill_color(27, 42, 74)
+    pdf.set_text_color(255, 255, 255)
+    for i, h in enumerate(headers):
+        pdf.cell(col_widths[i], 7, h, border=1, align="C", fill=True)
+    pdf.ln()
+    pdf.set_text_color(0, 0, 0)
+
+    _use_font(pdf, "", 8)
+    for idx, item in enumerate(items or []):
+        ref = ""
+        pkg = ""
+        if db and item.product_id:
+            product = db.get_product(item.product_id)
+            if product:
+                ref = product.reference
+                pkg = product.package_type
+
+        row = [
+            ref[:12],
+            item.product_name[:34],
+            str(item.quantity),
+            f"{item.unit_price:.2f} MAD",
+            pkg[:10],
+            f"{item.quantity * item.unit_price:.2f} MAD",
+        ]
+        for i, val in enumerate(row):
+            pdf.cell(col_widths[i], 6, val, border=1, align="C" if i != 1 else "L")
+        pdf.ln()
+
+    # 2.4 Arrêté (first after table)
+    pdf.ln(4)
+    total_int = int(round(invoice.total_ttc))
+    cents = round((invoice.total_ttc - total_int) * 100)
+    words = _nombre_en_lettres(total_int)
+    if cents > 0:
+        words += f" et {cents}/100"
+    _use_font(pdf, "I", 9)
+    pdf.cell(0, 6, f"Arrêté à la somme de : {words} ({invoice.total_ttc:.2f} MAD)", new_x="LMARGIN", new_y="NEXT", align="C")
+    pdf.ln(3)
+
+    # 2.5 Total HT
+    label_x = margin + page_w * 0.55
+    val_w = page_w * 0.22
+
+    pdf.set_x(label_x)
+    _use_font(pdf, "", 9)
+    pdf.cell(val_w, 6, "Total HT:", align="R")
+    pdf.cell(val_w, 6, f"{invoice.total_ht:.2f} MAD", align="R", new_x="LMARGIN", new_y="NEXT")
+
+    # 2.6 Total TTC
+    pdf.set_x(label_x)
+    _use_font(pdf, "B", 11)
+    pdf.cell(val_w, 7, "Total TTC:", align="R")
+    pdf.cell(val_w, 7, f"{invoice.total_ttc:.2f} MAD", align="R", new_x="LMARGIN", new_y="NEXT")
+
+    # 2.7 Note1 + 2.8 Note2
+    pdf.ln(4)
+    if invoice.note1:
+        _use_font(pdf, "", 8)
+        pdf.multi_cell(0, 4, invoice.note1)
+    if invoice.note2:
+        pdf.ln(2)
+        _use_font(pdf, "", 8)
+        pdf.multi_cell(0, 4, invoice.note2)
+
+    # ═══════════════════════════════════════════
+    # 3. FOOTER (bottom 10%) — ALL IN ONE
+    # ═══════════════════════════════════════════
+
+    cy = pdf.get_y()
+    if cy < footer_start_y - 5:
+        pdf.set_y(footer_start_y)
+    elif cy > A4_H - footer_margin:
+        pdf.add_page()
+
+    fy = pdf.get_y()
+    pdf.set_draw_color(200, 200, 200)
+    pdf.set_line_width(0.5)
+    pdf.line(margin, fy, margin + page_w, fy)
+    pdf.ln(5)
+
+    _use_font(pdf, "", 8)
+    foot_lines = []
+    if company:
+        if company.name:
+            foot_lines.append(company.name)
+        if company.address:
+            addr = company.address
+            if company.city:
+                addr += f", {company.city}"
+            if company.postal_code:
+                addr += f" {company.postal_code}"
+            foot_lines.append(addr)
+        if company.email:
+            foot_lines.append(f"Email: {company.email}")
+        if company.phone:
+            foot_lines.append(f"Tel: {company.phone}")
+        if company.bank_account:
+            foot_lines.append(f"Bank: {company.bank_account}")
+        fiscal = []
+        if company.if_tax:
+            fiscal.append(f"IF: {company.if_tax}")
+        if company.tp:
+            fiscal.append(f"TP: {company.tp}")
+        if company.rc:
+            fiscal.append(f"RC: {company.rc}")
+        if company.ice:
+            fiscal.append(f"ICE: {company.ice}")
+        if fiscal:
+            foot_lines.append(" | ".join(fiscal))
+
+    ftop = pdf.get_y()
+    for line in foot_lines:
+        pdf.set_x(margin)
+        pdf.cell(page_w, 4, line, align="C")
+        pdf.ln(4)
 
     path = os.path.join(PDF_DIR, f"invoice_{invoice.invoice_number}.pdf")
     pdf.output(path)

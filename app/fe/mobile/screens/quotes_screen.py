@@ -9,7 +9,7 @@ def quotes_view(page, navigate):
         quotes = page.db.get_all_quotes()
         rows.controls.clear()
         if not quotes:
-            rows.controls.append(ft.Text(tr_static(page.session.store.get("lang", "en"), "no_quotes"), color="#6B7280"))
+            rows.controls.append(ft.Text(tr_static(page.session.store.get("lang") or "en", "no_quotes"), color="#6B7280"))
         else:
             for q in quotes:
                 cname = page.db.get_customer(q.customer_id).name if q.customer_id else "N/A"
@@ -20,7 +20,7 @@ def quotes_view(page, navigate):
                             ft.Text(cname, size=12, color="#6B7280"),
                         ], expand=True, spacing=2),
                         ft.Column([
-                            ft.Text(f"{q.total_ht:,.2f}", size=14, weight=ft.FontWeight.BOLD, color="#1A1A2E"),
+                            ft.Text(f"{q.total_ht:,.2f} MAD", size=14, weight=ft.FontWeight.BOLD, color="#1A1A2E"),
                             status_badge(q.status),
                         ], horizontal_alignment=ft.CrossAxisAlignment.END, spacing=4),
                         ft.IconButton(ft.Icons.REMOVE_RED_EYE, icon_color="#2563EB", icon_size=20,
@@ -37,7 +37,7 @@ def quotes_view(page, navigate):
         if q.pdf_path and os.path.exists(q.pdf_path):
             os.startfile(q.pdf_path)
         else:
-            page.snack_bar = ft.SnackBar(ft.Text(tr_static(page.session.store.get("lang", "en"), "no_pdf_validate")))
+            page.snack_bar = ft.SnackBar(ft.Text(tr_static(page.session.store.get("lang") or "en", "no_pdf_validate")))
             page.snack_bar.open = True
             page.update()
 
@@ -46,17 +46,17 @@ def quotes_view(page, navigate):
             page.db.delete_quote(qid)
             page.overlay.remove(dlg); page.update(); load()
         dlg = ft.AlertDialog(
-            title=ft.Text(tr_static(page.session.store.get("lang", "en"), "delete_quote")),
-            content=ft.Text(tr_static(page.session.store.get("lang", "en"), "delete_quote_msg"), size=14),
-            actions=[ft.TextButton(tr_static(page.session.store.get("lang", "en"), "cancel"), on_click=lambda e: (page.overlay.remove(dlg), page.update())),
-                     ft.FilledButton(tr_static(page.session.store.get("lang", "en"), "delete"), on_click=do_delete, style=ft.ButtonStyle(bgcolor=ft.Colors.RED, color=ft.Colors.WHITE))],
+            title=ft.Text(tr_static(page.session.store.get("lang") or "en", "delete_quote")),
+            content=ft.Text(tr_static(page.session.store.get("lang") or "en", "delete_quote_msg"), size=14),
+            actions=[ft.TextButton(tr_static(page.session.store.get("lang") or "en", "cancel"), on_click=lambda e: (page.overlay.remove(dlg), page.update())),
+                     ft.FilledButton(tr_static(page.session.store.get("lang") or "en", "delete"), on_click=do_delete, style=ft.ButtonStyle(bgcolor=ft.Colors.RED, color=ft.Colors.WHITE))],
         )
         page.overlay.append(dlg); dlg.open = True; page.update()
 
     rows = ft.Column(spacing=8, scroll=ft.ScrollMode.AUTO)
     page.controls.clear()
     page.bgcolor = BACKGROUND
-    page.add(page_layout(page, navigate, tr_static(page.session.store.get("lang", "en"), "quotes"), back_route="/dashboard",
+    page.add(page_layout(page, navigate, tr_static(page.session.store.get("lang") or "en", "quotes"), back_route="/dashboard",
                 actions=[ft.IconButton(ft.Icons.ADD, icon_color=ft.Colors.WHITE, on_click=lambda e: navigate("/add_quote"))],
                 content=ft.Container(content=rows, expand=True, padding=16)))
     page.update()
@@ -291,9 +291,12 @@ def quote_view_view(page, navigate, quote_id):
         dn_id = page.db.insert_delivery_note(dn_obj)
         dn = page.db.get_delivery_note(dn_id)
 
+        notes_list = (q.notes or "").split("\n\n")
         inv_obj = Invoice(
             quote_id=quote_id, delivery_note_id=dn_id, customer_id=q.customer_id,
             date=today, due_date=today, status="draft",
+            note1=notes_list[0] if len(notes_list) > 0 else "",
+            note2=notes_list[1] if len(notes_list) > 1 else "",
             total_ht=total_ht, total_tva=0.0, total_ttc=total_ht
         )
         inv_id = page.db.insert_invoice(inv_obj)
@@ -334,7 +337,7 @@ def quote_view_view(page, navigate, quote_id):
                     content=ft.Column([
                         ft.Row([ft.Text("Customer:", weight=ft.FontWeight.BOLD, size=14, color="#374151"), ft.Text(cname, size=14, color="#374151")], spacing=8),
                         ft.Row([ft.Text("Status:", weight=ft.FontWeight.BOLD, size=14, color="#374151"), status_badge(q.status)], spacing=8),
-                        ft.Row([ft.Text("Total:", weight=ft.FontWeight.BOLD, size=16, color=PRIMARY), ft.Text(f"{total_ht:,.2f}", size=16, weight=ft.FontWeight.BOLD, color=PRIMARY)], spacing=8),
+                        ft.Row([ft.Text("Total:", weight=ft.FontWeight.BOLD, size=16, color=PRIMARY), ft.Text(f"{total_ht:,.2f} MAD", size=16, weight=ft.FontWeight.BOLD, color=PRIMARY)], spacing=8),
                     ], spacing=8),
                     bgcolor=ft.Colors.WHITE, padding=20, border_radius=14,
                     shadow=ft.BoxShadow(blur_radius=6, color="rgba(0,0,0,0.04)", offset=ft.Offset(0, 2)),

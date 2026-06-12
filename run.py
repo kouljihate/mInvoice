@@ -10,7 +10,8 @@ def run_web():
     from app.fe.web.main import create_app
     from config.settings import DEBUG, FLASK_HOST, FLASK_PORT
     app = create_app()
-    app.run(debug=DEBUG, host=FLASK_HOST, port=FLASK_PORT)
+    app.run(debug=DEBUG, host=FLASK_HOST, port=FLASK_PORT,
+            reloader_type='stat')
 
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "web"

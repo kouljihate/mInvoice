@@ -9,11 +9,14 @@ products_bp = Blueprint('products', __name__)
 def list_products():
     db = get_db(products_bp)
     q = request.args.get('q', '')
+    low = request.args.get('low_stock') == '1'
     products = db.search_products(q) if q else db.get_all_products()
+    if low:
+        products = [p for p in products if p.alert_stock > 0 and p.quantity <= p.alert_stock]
     company = db.get_company()
     lang = session.get('lang', 'en')
     db.close()
-    return render_template('products/list.html', products=products, q=q, company=company, lang=lang, tr=lambda k: tr(lang, k))
+    return render_template('products/list.html', products=products, q=q, low_stock=low, company=company, lang=lang, tr=lambda k: tr(lang, k))
 
 @products_bp.route('/products/add', methods=['GET', 'POST'])
 @login_required

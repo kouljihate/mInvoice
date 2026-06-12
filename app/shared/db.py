@@ -106,7 +106,7 @@ class Database:
     def _migrate_all(self):
         c = self.conn.cursor()
         for table, cols in {
-            "company": ["city", "postal_code", "ice", "rc", "if_tax", "tp", "cnss", "logo_path"],
+            "company": ["city", "postal_code", "ice", "rc", "if_tax", "tp", "cnss", "logo_path", "bank_account", "slogan"],
         }.items():
             for col in cols:
                 try: c.execute(f"ALTER TABLE {table} ADD COLUMN {col} TEXT DEFAULT ''")
@@ -127,6 +127,9 @@ class Database:
                 except sqlite3.OperationalError: pass
         for col in ["payment_number", "created_at", "updated_at"]:
             try: c.execute(f"ALTER TABLE payments ADD COLUMN {col} TEXT DEFAULT ''")
+            except sqlite3.OperationalError: pass
+        for col in ["note1", "note2"]:
+            try: c.execute(f"ALTER TABLE invoices ADD COLUMN {col} TEXT DEFAULT ''")
             except sqlite3.OperationalError: pass
         self.conn.commit()
 
@@ -151,6 +154,8 @@ class Database:
             tp=row["tp"] if "tp" in row.keys() else "",
             cnss=row["cnss"] if "cnss" in row.keys() else "",
             logo_path=row["logo_path"] if "logo_path" in row.keys() else "",
+            bank_account=row["bank_account"] if "bank_account" in row.keys() else "",
+            slogan=row["slogan"] if "slogan" in row.keys() else "",
             currency=row["currency"])
 
     def _row_to_product(self, row):
@@ -203,6 +208,8 @@ class Database:
             quote_id=row["quote_id"], delivery_note_id=row["delivery_note_id"],
             customer_id=row["customer_id"], date=row["date"], due_date=row["due_date"],
             status=row["status"], notes=row["notes"],
+            note1=row["note1"] if "note1" in row.keys() else "",
+            note2=row["note2"] if "note2" in row.keys() else "",
             total_ht=row["total_ht"], total_tva=row["total_tva"], total_ttc=row["total_ttc"],
             pdf_path=row["pdf_path"],
             created_at=row["created_at"] if "created_at" in row.keys() else "",
@@ -237,12 +244,12 @@ class Database:
     def save_company(self, company: Company):
         c = self.conn.cursor()
         c.execute("""INSERT OR REPLACE INTO company (id, name, address, city, postal_code,
-            phone, email, website, tax_id, ice, rc, if_tax, tp, cnss, logo_path, currency)
-            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            phone, email, website, tax_id, ice, rc, if_tax, tp, cnss, logo_path, bank_account, slogan, currency)
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (company.name, company.address, company.city, company.postal_code,
              company.phone, company.email, company.website, company.tax_id,
              company.ice, company.rc, company.if_tax, company.tp, company.cnss,
-             company.logo_path, company.currency))
+             company.logo_path, company.bank_account, company.slogan, company.currency))
         self.conn.commit()
         bootstrap = os.path.join(DB_DIR, "minvoice.db")
         if self.db_path == bootstrap:
@@ -527,11 +534,12 @@ class Database:
         c = self.conn.cursor()
         now = datetime.now().isoformat()
         inum = inv.invoice_number or self._next_doc_number("I")
-        c.execute("""INSERT INTO invoices (invoice_number, quote_id, delivery_note_id, customer_id, date, due_date, status, notes, total_ht, total_tva, total_ttc, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        c.execute("""INSERT INTO invoices (invoice_number, quote_id, delivery_note_id, customer_id, date, due_date, status, notes, note1, note2, total_ht, total_tva, total_ttc, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (inum, inv.quote_id, inv.delivery_note_id,
              inv.customer_id, inv.date, inv.due_date, inv.status,
-             inv.notes, inv.total_ht, inv.total_tva, inv.total_ttc, now, now))
+             inv.notes, inv.note1, inv.note2,
+             inv.total_ht, inv.total_tva, inv.total_ttc, now, now))
         self.conn.commit()
         return c.lastrowid
 
@@ -539,11 +547,12 @@ class Database:
         c = self.conn.cursor()
         now = datetime.now().isoformat()
         c.execute("""UPDATE invoices SET invoice_number=?, quote_id=?, delivery_note_id=?,
-            customer_id=?, date=?, due_date=?, status=?, notes=?,
+            customer_id=?, date=?, due_date=?, status=?, notes=?, note1=?, note2=?,
             total_ht=?, total_tva=?, total_ttc=?, updated_at=? WHERE id=?""",
             (inv.invoice_number, inv.quote_id, inv.delivery_note_id,
              inv.customer_id, inv.date, inv.due_date, inv.status,
-             inv.notes, inv.total_ht, inv.total_tva, inv.total_ttc, now, inv.id))
+             inv.notes, inv.note1, inv.note2,
+             inv.total_ht, inv.total_tva, inv.total_ttc, now, inv.id))
         self.conn.commit()
 
     def update_invoice_status(self, id, status):
@@ -577,6 +586,8 @@ class Database:
             new_status = "completed"
         elif total_paid > 0:
             new_status = "partial"
+        elif inv.status == "sent":
+            new_status = "sent"
         else:
             new_status = "draft"
         self.update_invoice_status(invoice_id, new_status)
@@ -677,9 +688,14 @@ class Database:
             LEFT JOIN invoices i ON p.invoice_id = i.id ORDER BY p.date DESC""")
         return [self._row_to_payment(row) for row in c.fetchall()]
 
+    def get_payment_by_id(self, id):
+        c = self.conn.cursor()
+        c.execute("SELECT * FROM payments WHERE id = ?", (id,))
+        return self._row_to_payment(c.fetchone())
+
     def get_total_paid(self, invoice_id):
         c = self.conn.cursor()
-        c.execute("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE invoice_id = ?", (invoice_id,))
+        c.execute("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE invoice_id = ? AND status = 'completed'", (invoice_id,))
         return c.fetchone()[0]
 
     def insert_payment(self, p: Payment):
@@ -761,6 +777,7 @@ class Database:
         total_customers = c.execute("SELECT COUNT(*) FROM customers").fetchone()[0]
         total_invoices = c.execute("SELECT COUNT(*) FROM invoices").fetchone()[0]
         total_quotes = c.execute("SELECT COUNT(*) FROM quotes").fetchone()[0]
+        total_delivery_notes = c.execute("SELECT COUNT(*) FROM delivery_notes").fetchone()[0]
         total_payments = c.execute("SELECT COUNT(*) FROM payments").fetchone()[0]
 
         sales_trend = c.execute("""SELECT strftime('%m', date) as m, strftime('%Y', date) as y, SUM(amount) as total
@@ -782,7 +799,8 @@ class Database:
             quotes_month=quotes_month, quotes_amount_month=quotes_amount_month,
             quotes_converted=quotes_converted,
             total_products=total_products, total_customers=total_customers,
-            total_invoices=total_invoices, total_quotes=total_quotes, total_payments=total_payments,
+            total_invoices=total_invoices, total_quotes=total_quotes,
+            total_delivery_notes=total_delivery_notes, total_payments=total_payments,
             sales_trend=sales_trend)
 
     def close(self):

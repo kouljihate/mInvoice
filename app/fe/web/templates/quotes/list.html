@@ -16,7 +16,7 @@
     </div>
     <div class="text-end">
       <span class="badge {% if q.status == 'draft' %}bg-secondary{% elif q.status == 'validated' %}bg-success{% elif q.status == 'sent' %}bg-info{% elif q.status == 'confirmed' %}bg-primary{% else %}bg-warning{% endif %} rounded-pill">{{ q.status }}</span>
-      <div class="mt-1 small">{{ '%.2f'|format(q.total_ttc) }}</div>
+      <div class="mt-1 small">{{ '%.2f'|format(q.total_ttc) }} MAD</div>
     </div>
   </div>
   {% else %}
