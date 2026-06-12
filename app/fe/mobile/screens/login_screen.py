@@ -1,4 +1,5 @@
 import flet as ft
+from app import __version__
 from app.shared.utils import tr_static
 from app.fe.mobile.widgets.theme import PRIMARY, SECONDARY, TEXT_SECONDARY
 from app.fe.mobile.widgets.ui_helpers import language_bar
@@ -92,6 +93,8 @@ def login_view(page, navigate):
                         ft.OutlinedButton("Change Password", on_click=lambda e: page.overlay.append(dlg) or setattr(dlg, 'open', True) or page.update(), width=145,
                             style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=20), side=ft.BorderSide(1, SECONDARY), color=SECONDARY)),
                     ], spacing=10, alignment=ft.MainAxisAlignment.CENTER),
+                    ft.Container(height=16),
+                    ft.Text(f"v{__version__} - @koul", size=9, color=TEXT_SECONDARY),
                 ], expand=True, alignment=ft.MainAxisAlignment.START, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 language_bar(page),
             ], expand=True),

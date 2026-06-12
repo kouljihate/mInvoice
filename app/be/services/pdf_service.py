@@ -23,8 +23,8 @@ def _try_add_fonts(pdf):
 
 
 def _use_font(pdf, style="", size=10):
-    style_map = {"normal": "", "bold": "B", "italic": "I", "underline": "U"}
-    mapped = style_map.get(style.lower() if style else "", style)
+    style_map = {"normal": "", "bold": "B", "italic": "", "underline": ""}
+    mapped = style_map.get(style.lower() if style else "", "")
     pdf.set_font("Comfortaa", mapped, size)
 
 
