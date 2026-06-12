@@ -11,41 +11,21 @@ def ensure_pdf_dir():
 
 def _ensure_fonts():
     os.makedirs(FONTS_DIR, exist_ok=True)
-    regular = os.path.join(FONTS_DIR, "Comfortaa-Regular.ttf")
-    bold = os.path.join(FONTS_DIR, "Comfortaa-Bold.ttf")
-    if os.path.exists(regular) and os.path.exists(bold):
-        return True
-    try:
-        import urllib.request
-        url = "https://github.com/google/fonts/raw/main/ofl/comfortaa/Comfortaa%5Bwght%5D.ttf"
-        if not os.path.exists(regular):
-            urllib.request.urlretrieve(url, regular)
-        if not os.path.exists(bold):
-            import shutil
-            shutil.copy2(regular, bold)
-        return True
-    except Exception:
-        return False
 
 
 def _try_add_fonts(pdf):
     _ensure_fonts()
-    comfortaa_regular = os.path.join(FONTS_DIR, "Comfortaa-Regular.ttf")
-    comfortaa_bold = os.path.join(FONTS_DIR, "Comfortaa-Bold.ttf")
-    if os.path.exists(comfortaa_regular) and os.path.exists(comfortaa_bold):
-        pdf.add_font("Comfortaa", "", comfortaa_regular, uni=True)
-        pdf.add_font("Comfortaa", "B", comfortaa_bold, uni=True)
-        return True
-    return False
+    regular = os.path.join(FONTS_DIR, "Comfortaa-Regular.ttf")
+    bold = os.path.join(FONTS_DIR, "Comfortaa-Bold.ttf")
+    if os.path.exists(regular) and os.path.exists(bold):
+        pdf.add_font("Comfortaa", "", regular, uni=True)
+        pdf.add_font("Comfortaa", "B", bold, uni=True)
 
 
 def _use_font(pdf, style="", size=10):
     style_map = {"normal": "", "bold": "B", "italic": "I", "underline": "U"}
     mapped = style_map.get(style.lower() if style else "", style)
-    if hasattr(pdf, "_comfortaa_loaded") and pdf._comfortaa_loaded:
-        pdf.set_font("Comfortaa", mapped, size)
-    else:
-        pdf.set_font("Helvetica", mapped, size)
+    pdf.set_font("Comfortaa", mapped, size)
 
 
 class DocTemplate:
@@ -59,7 +39,7 @@ class DocTemplate:
 
     def _init_pdf(self):
         pdf = FPDF()
-        pdf._comfortaa_loaded = _try_add_fonts(pdf)
+        _try_add_fonts(pdf)
         return pdf
 
     def build(self, items, total_ht, total_ttc, notes=""):
@@ -371,7 +351,7 @@ def generate_invoice_pdf(company, invoice, items, payments=None, total_paid=0, d
     ensure_pdf_dir()
 
     pdf = FPDF(orientation="P", unit="mm", format="A4")
-    pdf._comfortaa_loaded = _try_add_fonts(pdf)
+    _try_add_fonts(pdf)
     pdf.add_page()
 
     A4_H = 297
@@ -393,75 +373,75 @@ def generate_invoice_pdf(company, invoice, items, payments=None, total_paid=0, d
     # 1. HEADER (top 20%)
     # ═══════════════════════════════════════════
 
-    top_y = 10
+    top_y = 8
 
     # 1.1 Left: Logo + slogan only
     if company and company.logo_path and os.path.exists(company.logo_path):
         try:
-            pdf.image(company.logo_path, x=margin, y=top_y, w=35)
+            pdf.image(company.logo_path, x=margin, y=top_y, w=30)
         except Exception:
             pass
 
     slogan = company.slogan if company and company.slogan else (company.website if company else "")
     if slogan:
-        _use_font(pdf, "", 9)
-        pdf.set_xy(margin, top_y + 38)
-        pdf.cell(page_w * 0.48, 5, slogan, align="L")
+        _use_font(pdf, "", 8)
+        pdf.set_xy(margin, top_y + 32)
+        pdf.cell(page_w * 0.48, 4, slogan, align="L")
 
     # 1.2 Right: Customer info
     right_col_x = margin + page_w * 0.5
     right_col_w = page_w * 0.48
 
     if customer:
-        _use_font(pdf, "B", 11)
-        pdf.set_xy(right_col_x, top_y + 8)
-        pdf.cell(right_col_w, 6, customer.name, align="R")
+        _use_font(pdf, "B", 10)
+        pdf.set_xy(right_col_x, top_y + 6)
+        pdf.cell(right_col_w, 5, customer.name, align="R")
 
-        cr_y = top_y + 16
-        _use_font(pdf, "", 8)
+        cr_y = top_y + 13
+        _use_font(pdf, "", 7)
         if customer.address:
             pdf.set_xy(right_col_x, cr_y)
-            pdf.cell(right_col_w, 4, customer.address, align="R")
-            cr_y += 4
+            pdf.cell(right_col_w, 3.5, customer.address, align="R")
+            cr_y += 3.5
         if customer.customer_type == "company":
             if hasattr(customer, "ice") and customer.ice:
                 pdf.set_xy(right_col_x, cr_y)
-                pdf.cell(right_col_w, 4, f"ICE: {customer.ice}", align="R")
-                cr_y += 4
+                pdf.cell(right_col_w, 3.5, f"ICE: {customer.ice}", align="R")
+                cr_y += 3.5
         else:
             if customer.email:
                 pdf.set_xy(right_col_x, cr_y)
-                pdf.cell(right_col_w, 4, customer.email, align="R")
+                pdf.cell(right_col_w, 3.5, customer.email, align="R")
 
     pdf.set_y(header_end_y)
 
     sy = pdf.get_y()
     pdf.set_draw_color(200, 200, 200)
     pdf.line(margin, sy, margin + page_w, sy)
-    pdf.ln(6)
+    pdf.ln(4)
 
     # ═══════════════════════════════════════════
     # 2. BODY (middle 70%)
     # ═══════════════════════════════════════════
 
     # 2.1 Invoice number + date at left
-    _use_font(pdf, "B", 14)
-    pdf.cell(0, 8, f"INVOICE {invoice.invoice_number}", new_x="LMARGIN", new_y="NEXT", align="L")
-    _use_font(pdf, "", 9)
-    pdf.cell(0, 5, f"Date: {invoice.date}", new_x="LMARGIN", new_y="NEXT", align="L")
+    _use_font(pdf, "B", 13)
+    pdf.cell(0, 7, f"INVOICE {invoice.invoice_number}", new_x="LMARGIN", new_y="NEXT", align="L")
+    _use_font(pdf, "", 8)
+    pdf.cell(0, 4, f"Date: {invoice.date}", new_x="LMARGIN", new_y="NEXT", align="L")
     if invoice.due_date:
-        pdf.cell(0, 5, f"Due Date: {invoice.due_date}", new_x="LMARGIN", new_y="NEXT", align="L")
+        pdf.cell(0, 4, f"Due Date: {invoice.due_date}", new_x="LMARGIN", new_y="NEXT", align="L")
 
     # 2.2 Attention To (same area, on same row as invoice)
     if customer:
         attn_x = margin + page_w * 0.5
         contact = customer.name
-        _use_font(pdf, "B", 9)
-        pdf.set_xy(attn_x, pdf.get_y() - 18)
-        pdf.cell(page_w * 0.48, 5, f"Attention To: {contact}", align="R")
-        pdf.set_y(pdf.get_y() + 18)
+        _use_font(pdf, "B", 8)
+        pdf.set_xy(attn_x, pdf.get_y() - 15)
+        pdf.cell(page_w * 0.48, 4, f"Attention To: {contact}", align="R")
+        pdf.set_y(pdf.get_y() + 15)
 
-    pdf.ln(4)
+    pdf.ln(2)
 
     # 2.3 Items table
     col_ref = 18
@@ -473,15 +453,15 @@ def generate_invoice_pdf(company, invoice, items, payments=None, total_paid=0, d
     col_widths = [col_ref, col_desig, col_qty, col_price, col_pkg, col_total]
     headers = ["Ref", "Designation", "Qty", "Unit Price", "Pkg Size", "Total HT"]
 
-    _use_font(pdf, "B", 8)
+    _use_font(pdf, "B", 7)
     pdf.set_fill_color(27, 42, 74)
     pdf.set_text_color(255, 255, 255)
     for i, h in enumerate(headers):
-        pdf.cell(col_widths[i], 7, h, border=1, align="C", fill=True)
+        pdf.cell(col_widths[i], 6, h, border=1, align="C", fill=True)
     pdf.ln()
     pdf.set_text_color(0, 0, 0)
 
-    _use_font(pdf, "", 8)
+    _use_font(pdf, "", 7)
     for idx, item in enumerate(items or []):
         ref = ""
         pkg = ""
@@ -500,47 +480,47 @@ def generate_invoice_pdf(company, invoice, items, payments=None, total_paid=0, d
             f"{item.quantity * item.unit_price:.2f} MAD",
         ]
         for i, val in enumerate(row):
-            pdf.cell(col_widths[i], 6, val, border=1, align="C" if i != 1 else "L")
+            pdf.cell(col_widths[i], 5, val, border=1, align="C" if i != 1 else "L")
         pdf.ln()
 
-    # 2.4 Arrêté (first after table)
-    pdf.ln(4)
+    # 2.4 Total HT
+    label_x = margin + page_w * 0.55
+    val_w = page_w * 0.22
+
+    pdf.set_x(label_x)
+    _use_font(pdf, "", 8)
+    pdf.cell(val_w, 5, "Total HT:", align="R")
+    pdf.cell(val_w, 5, f"{invoice.total_ht:.2f} MAD", align="R", new_x="LMARGIN", new_y="NEXT")
+
+    # 2.5 Total TTC
+    pdf.set_x(label_x)
+    _use_font(pdf, "B", 10)
+    pdf.cell(val_w, 6, "Total TTC:", align="R")
+    pdf.cell(val_w, 6, f"{invoice.total_ttc:.2f} MAD", align="R", new_x="LMARGIN", new_y="NEXT")
+
+    # 2.6 Arrêté
+    pdf.ln(2)
     total_int = int(round(invoice.total_ttc))
     cents = round((invoice.total_ttc - total_int) * 100)
     words = _nombre_en_lettres(total_int)
     if cents > 0:
         words += f" et {cents}/100"
-    _use_font(pdf, "I", 9)
-    pdf.cell(0, 6, f"Arrêté à la somme de : {words} ({invoice.total_ttc:.2f} MAD)", new_x="LMARGIN", new_y="NEXT", align="C")
-    pdf.ln(3)
-
-    # 2.5 Total HT
-    label_x = margin + page_w * 0.55
-    val_w = page_w * 0.22
-
-    pdf.set_x(label_x)
-    _use_font(pdf, "", 9)
-    pdf.cell(val_w, 6, "Total HT:", align="R")
-    pdf.cell(val_w, 6, f"{invoice.total_ht:.2f} MAD", align="R", new_x="LMARGIN", new_y="NEXT")
-
-    # 2.6 Total TTC
-    pdf.set_x(label_x)
-    _use_font(pdf, "B", 11)
-    pdf.cell(val_w, 7, "Total TTC:", align="R")
-    pdf.cell(val_w, 7, f"{invoice.total_ttc:.2f} MAD", align="R", new_x="LMARGIN", new_y="NEXT")
+    _use_font(pdf, "I", 8)
+    pdf.cell(0, 5, f"Arrêté à la somme de : {words} ({invoice.total_ttc:.2f} MAD)", new_x="LMARGIN", new_y="NEXT", align="C")
+    pdf.ln(1)
 
     # 2.7 Note1 + 2.8 Note2
-    pdf.ln(4)
+    pdf.ln(2)
     if invoice.note1:
-        _use_font(pdf, "", 8)
-        pdf.multi_cell(0, 4, invoice.note1)
+        _use_font(pdf, "", 7)
+        pdf.multi_cell(0, 3.5, invoice.note1)
     if invoice.note2:
-        pdf.ln(2)
-        _use_font(pdf, "", 8)
-        pdf.multi_cell(0, 4, invoice.note2)
+        pdf.ln(1)
+        _use_font(pdf, "", 7)
+        pdf.multi_cell(0, 3.5, invoice.note2)
 
     # ═══════════════════════════════════════════
-    # 3. FOOTER (bottom 10%) — ALL IN ONE
+    # 3. FOOTER (bottom 10%) — 3-column layout (left/center/right)
     # ═══════════════════════════════════════════
 
     cy = pdf.get_y()
@@ -553,43 +533,61 @@ def generate_invoice_pdf(company, invoice, items, payments=None, total_paid=0, d
     pdf.set_draw_color(200, 200, 200)
     pdf.set_line_width(0.5)
     pdf.line(margin, fy, margin + page_w, fy)
-    pdf.ln(5)
+    pdf.ln(4)
 
-    _use_font(pdf, "", 8)
-    foot_lines = []
+    col_w = page_w / 3
+
+    # Left column: name + address + email + phone
+    _use_font(pdf, "", 7)
+    lx = margin
     if company:
+        left_lines = []
         if company.name:
-            foot_lines.append(company.name)
+            left_lines.append(company.name)
         if company.address:
             addr = company.address
             if company.city:
                 addr += f", {company.city}"
             if company.postal_code:
                 addr += f" {company.postal_code}"
-            foot_lines.append(addr)
+            left_lines.append(addr)
         if company.email:
-            foot_lines.append(f"Email: {company.email}")
+            left_lines.append(f"Email: {company.email}")
         if company.phone:
-            foot_lines.append(f"Tel: {company.phone}")
-        if company.bank_account:
-            foot_lines.append(f"Bank: {company.bank_account}")
-        fiscal = []
-        if company.if_tax:
-            fiscal.append(f"IF: {company.if_tax}")
-        if company.tp:
-            fiscal.append(f"TP: {company.tp}")
-        if company.rc:
-            fiscal.append(f"RC: {company.rc}")
-        if company.ice:
-            fiscal.append(f"ICE: {company.ice}")
-        if fiscal:
-            foot_lines.append(" | ".join(fiscal))
+            left_lines.append(f"Tel: {company.phone}")
+        y = pdf.get_y()
+        for line in left_lines:
+            pdf.set_xy(lx, y)
+            pdf.cell(col_w, 3.5, line, align="L")
+            y += 3.5
+        pdf.set_y(y)
 
-    ftop = pdf.get_y()
-    for line in foot_lines:
-        pdf.set_x(margin)
-        pdf.cell(page_w, 4, line, align="C")
-        pdf.ln(4)
+    # Center column: bank account
+    cx = margin + col_w
+    if company and company.bank_account:
+        y = pdf.get_y()
+        pdf.set_xy(cx, y)
+        pdf.cell(col_w, 3.5, f"Bank: {company.bank_account}", align="C")
+        pdf.set_y(y + 3.5)
+
+    # Right column: IF + RC + TP + ICE
+    rx = margin + col_w * 2
+    if company:
+        right_lines = []
+        if company.if_tax:
+            right_lines.append(f"IF: {company.if_tax}")
+        if company.rc:
+            right_lines.append(f"RC: {company.rc}")
+        if company.tp:
+            right_lines.append(f"TP: {company.tp}")
+        if company.ice:
+            right_lines.append(f"ICE: {company.ice}")
+        y = pdf.get_y()
+        for line in right_lines:
+            pdf.set_xy(rx, y)
+            pdf.cell(col_w, 3.5, line, align="R")
+            y += 3.5
+        pdf.set_y(y)
 
     path = os.path.join(PDF_DIR, f"invoice_{invoice.invoice_number}.pdf")
     pdf.output(path)
