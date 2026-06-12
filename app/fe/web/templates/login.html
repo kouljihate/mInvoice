@@ -1,14 +1,21 @@
 {% extends 'base.html' %}
 {% block title %}Login{% endblock %}
 {% block content %}
-<div class="row justify-content-center mt-5">
+<div class="row justify-content-center mt-4">
   <div class="col-md-4">
     <div class="card shadow">
-      <div class="card-body p-5 text-center position-relative" style="min-height:500px;">
+      <div class="card-body p-4 text-center position-relative" style="min-height:480px;">
         <i class="bi bi-receipt text-primary" style="font-size:3rem;"></i>
         <h4 class="mt-2">Web Invoice</h4>
         <p class="text-muted small">Manage your business</p>
         {% if error %}<div class="alert alert-danger py-2">Invalid credentials</div>{% endif %}
+        {% with msgs = get_flashed_messages(with_categories=true) %}
+          {% if msgs %}
+            {% for cat, msg in msgs %}
+              <div class="alert alert-{{ cat }} py-2">{{ msg }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
         <form method="post">
           <div class="mb-3">
             <input type="text" name="username" class="form-control" placeholder="Username" required>
@@ -18,8 +25,36 @@
           </div>
           <button type="submit" class="btn btn-primary w-100">Login</button>
         </form>
-        <div class="text-center text-muted small position-absolute bottom-0 start-0 end-0 pb-2">v{{ version }} - @koul</div>
+        <div class="mt-3 d-flex gap-2 justify-content-center">
+          <form method="post" action="{{ url_for('auth.reset_password') }}">
+            <button type="submit" class="btn btn-outline-secondary btn-sm" onclick="return confirm('Reset password to admin123?')">Reset Password</button>
+          </form>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#changePwdModal">Change Password</button>
+        </div>
       </div>
+    </div>
+    <div class="text-center text-muted small mt-2">v{{ version }} - @koul</div>
+  </div>
+</div>
+
+<div class="modal fade" id="changePwdModal" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('auth.change_password') }}">
+        <div class="modal-header"><h6 class="modal-title">Change Password</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <input type="password" name="old_password" class="form-control" placeholder="Current password" required>
+          </div>
+          <div class="mb-3">
+            <input type="password" name="new_password" class="form-control" placeholder="New password" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Change</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

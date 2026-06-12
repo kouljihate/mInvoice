@@ -280,6 +280,18 @@ class Database:
                   (user.username, user.password, user.full_name))
         self.conn.commit()
 
+    def reset_password(self, new_password="admin123"):
+        c = self.conn.cursor()
+        c.execute("UPDATE users SET password = ?", (new_password,))
+        self.conn.commit()
+        return c.rowcount > 0
+
+    def update_password(self, old_password, new_password):
+        c = self.conn.cursor()
+        c.execute("UPDATE users SET password = ? WHERE password = ?", (new_password, old_password))
+        self.conn.commit()
+        return c.rowcount > 0
+
     # --- PRODUCTS ---
     def get_all_products(self):
         c = self.conn.cursor()

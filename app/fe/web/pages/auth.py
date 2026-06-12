@@ -31,6 +31,28 @@ def login():
     db.close()
     return render_template('login.html', error=False, version=__version__)
 
+@auth_bp.route('/reset-password', methods=['POST'])
+def reset_password():
+    db = get_db(auth_bp)
+    db.reset_password()
+    db.close()
+    flash('Password reset to admin123', 'success')
+    return redirect(url_for('auth.login'))
+
+@auth_bp.route('/change-password', methods=['POST'])
+def change_password():
+    db = get_db(auth_bp)
+    old = request.form.get('old_password', '')
+    new = request.form.get('new_password', '')
+    if not new:
+        flash('New password cannot be empty', 'danger')
+    elif db.update_password(old, new):
+        flash('Password changed successfully', 'success')
+    else:
+        flash('Current password is incorrect', 'danger')
+    db.close()
+    return redirect(url_for('auth.login'))
+
 @auth_bp.route('/logout')
 def logout():
     session.clear()
