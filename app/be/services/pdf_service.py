@@ -356,7 +356,7 @@ def generate_invoice_pdf(company, invoice, items, payments=None, total_paid=0, d
 
     A4_H = 297
     margin = 15
-    footer_margin = 42
+    footer_margin = 55
     pdf.set_auto_page_break(auto=True, margin=footer_margin)
     pdf.set_left_margin(margin)
     pdf.set_right_margin(margin)
@@ -367,7 +367,7 @@ def generate_invoice_pdf(company, invoice, items, payments=None, total_paid=0, d
         customer = db.get_customer(invoice.customer_id)
 
     header_end_y = 15 + (A4_H - 30) * 0.20
-    footer_start_y = 15 + (A4_H - 30) * 0.90
+    footer_start_y = 15 + (A4_H - 30) * 0.78
 
     # ═══════════════════════════════════════════
     # 1. HEADER (top 20%)
