@@ -538,54 +538,49 @@ def generate_invoice_pdf(company, invoice, items, payments=None, total_paid=0, d
     col_w = page_w / 3
 
     # Left column: name + address + email + phone
+    # Right column: IF + RC + TP + ICE  (paired on same rows)
+    # Center: bank account (shown once on the first row)
     _use_font(pdf, "", 7)
     lx = margin
+    cx = margin + col_w
+    rx = margin + col_w * 2
+    rows_data = []
+    left_items = []
     if company:
-        left_lines = []
         if company.name:
-            left_lines.append(company.name)
+            left_items.append(company.name)
         if company.address:
             addr = company.address
             if company.city:
                 addr += f", {company.city}"
             if company.postal_code:
                 addr += f" {company.postal_code}"
-            left_lines.append(addr)
+            left_items.append(addr)
         if company.email:
-            left_lines.append(f"Email: {company.email}")
+            left_items.append(f"Email: {company.email}")
         if company.phone:
-            left_lines.append(f"Tel: {company.phone}")
-        y = pdf.get_y()
-        for line in left_lines:
-            pdf.set_xy(lx, y)
-            pdf.cell(col_w, 3.5, line, align="L")
-            y += 3.5
-        pdf.set_y(y)
-
-    # Center column: bank account
-    cx = margin + col_w
-    if company and company.bank_account:
-        y = pdf.get_y()
-        pdf.set_xy(cx, y)
-        pdf.cell(col_w, 3.5, f"Bank: {company.bank_account}", align="C")
-        pdf.set_y(y + 3.5)
-
-    # Right column: IF + RC + TP + ICE
-    rx = margin + col_w * 2
-    if company:
-        right_lines = []
+            left_items.append(f"Tel: {company.phone}")
+        right_items = []
         if company.if_tax:
-            right_lines.append(f"IF: {company.if_tax}")
+            right_items.append(f"IF: {company.if_tax}")
         if company.rc:
-            right_lines.append(f"RC: {company.rc}")
+            right_items.append(f"RC: {company.rc}")
         if company.tp:
-            right_lines.append(f"TP: {company.tp}")
+            right_items.append(f"TP: {company.tp}")
         if company.ice:
-            right_lines.append(f"ICE: {company.ice}")
+            right_items.append(f"ICE: {company.ice}")
+        max_rows = max(len(left_items), len(right_items), 1)
         y = pdf.get_y()
-        for line in right_lines:
+        for i in range(max_rows):
+            lv = left_items[i] if i < len(left_items) else ""
+            rv = right_items[i] if i < len(right_items) else ""
+            pdf.set_xy(lx, y)
+            pdf.cell(col_w, 3.5, lv, align="L")
+            if i == 0 and company.bank_account:
+                pdf.set_xy(cx, y)
+                pdf.cell(col_w, 3.5, f"Bank: {company.bank_account}", align="C")
             pdf.set_xy(rx, y)
-            pdf.cell(col_w, 3.5, line, align="R")
+            pdf.cell(col_w, 3.5, rv, align="R")
             y += 3.5
         pdf.set_y(y)
 
